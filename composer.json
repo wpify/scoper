@@ -1,0 +1,26 @@
+{
+    "name": "wpify/wordpress-scoper",
+    "description": "Composer plugin that scopes WordPress and WooCommerce dependencies for usage in WordPress plugins and themes.",
+    "type": "composer-plugin",
+    "autoload": {
+        "psr-4": {
+            "WpifyScoper\\": "src/"
+        }
+    },
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Daniel Mejta",
+            "email": "daniel@mejta.net"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "humbug/php-scoper": "^0.14.0",
+        "jetbrains/phpstorm-stubs": "dev-master",
+        "composer-plugin-api": "^2.0"
+    },
+    "require-dev": {
+        "composer/composer": "^2.0"
+    }
+}
