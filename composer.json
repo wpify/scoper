@@ -22,5 +22,8 @@
     },
     "require-dev": {
         "composer/composer": "^2.0"
+    },
+    "extra": {
+        "class": "WpifyScoper\\Plugin"
     }
 }
