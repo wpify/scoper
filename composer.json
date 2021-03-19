@@ -14,16 +14,33 @@
             "email": "daniel@mejta.net"
         }
     ],
+    "scripts": {
+        "extract": "php ./scripts/extract-symbols.php"
+    },
     "minimum-stability": "stable",
+    "repositories":[
+        {
+            "type":"composer",
+            "url":"https://wpackagist.org"
+        }
+    ],
     "require": {
         "humbug/php-scoper": "^0.14.0",
         "jetbrains/phpstorm-stubs": "dev-master",
         "composer-plugin-api": "^2.0"
     },
     "require-dev": {
-        "composer/composer": "^2.0"
+        "composer/composer": "^2.0",
+        "johnpbloch/wordpress": "^5.7",
+        "wpackagist-plugin/woocommerce": "^5.1",
+        "nikic/php-parser": "^4.10"
     },
     "extra": {
-        "class": "WpifyScoper\\Plugin"
+        "class": "WpifyScoper\\Plugin",
+        "wordpress-install-dir": "sources/wordpress",
+        "installer-paths": {
+            "sources/plugin-{$name}/": ["type:wordpress-plugin"],
+            "sources/theme-{$name}/": ["type:wordpress-theme"]
+        }
     }
 }

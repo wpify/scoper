@@ -31,6 +31,9 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	/** @var array */
 	private $packages;
 
+	/** @var string */
+	private $tempDir;
+
 	public static function getSubscribedEvents() {
 		return array(
 			PluginEvents::COMMAND => array(
@@ -43,16 +46,18 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$this->composer = $composer;
 		$this->io       = $io;
 
-		$extra         = $composer->getPackage()->getExtra();
+		$extra = $composer->getPackage()->getExtra();
+
 		$config_values = array(
-			'folder'   => getcwd() . '/vendor-scoped',
-			'prefix'   => 'WordPressScoped',
+			'folder'   => getcwd() . DIRECTORY_SEPARATOR . 'vendor-scoped',
+			'temp'     => getcwd() . DIRECTORY_SEPARATOR . 'vendor-extra',
+			'prefix'   => $this->toCamelCase( $composer->getPackage()->getName() ),
 			'globals'  => array( 'wordpress' ),
 			'packages' => array(),
 		);
 
 		if ( ! empty( $extra['wordpress-scoper']['folder'] ) ) {
-			$config_values['folder'] = getcwd() . '/' . $extra['wordpress-scoper']['folder'];
+			$config_values['folder'] = getcwd() . DIRECTORY_SEPARATOR . $extra['wordpress-scoper']['folder'];
 		}
 
 		if ( ! empty( $extra['wordpress-scoper']['prefix'] ) ) {
@@ -67,10 +72,23 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$config_values['packages'] = $extra['wordpress-scoper']['packages'];
 		}
 
+		if ( ! empty( $extra['wordpress-scoper']['temp'] ) ) {
+			$config_values['temp'] = getcwd() . DIRECTORY_SEPARATOR . $extra['wordpress-scoper']['temp'];
+		}
+
 		$this->folder   = $config_values['folder'];
 		$this->prefix   = $config_values['prefix'];
 		$this->globals  = $config_values['globals'];
 		$this->packages = $config_values['packages'];
+		$this->tempDir  = $config_values['temp'];
+	}
+
+	public function toCamelCase( string $source = '' ) {
+		$text = preg_replace( '/[^a-zA-Z0-9]+/', ' ', $source );
+		$text = ucwords( $text );
+		$text = str_replace( ' ', '', $text );
+
+		return $text;
 	}
 
 	public function deactivate( Composer $composer, IOInterface $io ) {
@@ -89,8 +107,68 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
 	public function handleInstall( CommandEvent $event ) {
 		if ( ! empty( $this->packages ) ) {
-			$this->createJson( $this->folder . '/composer.json', array( 'require' => $this->packages ) );
-			$this->runInstall( $this->folder );
+			$scoperConfig = $this->createScoperConfig( $this->tempDir );
+
+			$commands = array(
+				'php-scoper add-prefix --output-dir=' . $this->folder . ' --force --config=' . $scoperConfig,
+				'composer dump-autoload --working-dir=' . $this->folder . ' --ignore-platform-reqs --optimize',
+			);
+
+			$composerJson = array(
+				'require' => $this->packages,
+				'scripts' => array(
+					'post-install-cmd' => $commands,
+					'post-update-cmd'  => $commands,
+				),
+			);
+
+			$this->createJson( strval( $this->tempDir . '/composer.json' ), $composerJson );
+			$this->runInstall( $this->tempDir );
+		}
+	}
+
+	private function createScoperConfig( string $path ) {
+		$inc_path    = $this->createPath( array( __DIR__, '..', 'config', 'scoper.inc.php' ) );
+		$config_path = $this->createPath( array( __DIR__, '..', 'config', 'scoper.config.php' ) );
+		$this->createFolder( $path );
+		$this->createFolder( $this->tempDir );
+		$final_path = $path . DIRECTORY_SEPARATOR . 'scoper.inc.php';
+
+		$config                = require_once $config_path;
+		$config['prefix']      = $this->prefix;
+		$config['source']      = $this->tempDir;
+		$config['destination'] = $this->folder;
+		$config['whitelist']   = array();
+
+		$symbols_dir = realpath( __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'symbols' );
+
+		if ( in_array( 'wordpress', $this->globals ) ) {
+			$config['whitelist'] = array_merge_recursive(
+				$config['whitelist'],
+				require $symbols_dir . DIRECTORY_SEPARATOR . 'wordpress.php'
+			);
+		}
+
+		if ( in_array( 'woocommerce', $this->globals ) ) {
+			$config['whitelist'] = array_merge_recursive(
+				$config['whitelist'],
+				require $symbols_dir . DIRECTORY_SEPARATOR . 'woocommerce.php'
+			);
+		}
+
+		copy( $inc_path, $path . DIRECTORY_SEPARATOR . 'scoper.inc.php' );
+		file_put_contents( $path . DIRECTORY_SEPARATOR . 'scoper.config.php', '<?php return ' . var_export( $config, true ) . ';' );
+
+		return $final_path;
+	}
+
+	private function createPath( array $parts ) {
+		return DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
+	}
+
+	private function createFolder( string $path ) {
+		if ( ! file_exists( $path ) ) {
+			mkdir( $path, 0755, true );
 		}
 	}
 
@@ -100,21 +178,15 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		file_put_contents( $path, $json );
 	}
 
-	private function createFolder( string $path ) {
-		if ( ! file_exists( $path ) ) {
-			mkdir( $path, 0755, true );
-		}
-	}
-
 	private function runInstall( string $path ) {
-		$input       = new ArrayInput( array(
+		$output = new ConsoleOutput();
+
+		$application = new Application();
+		$application->run( new ArrayInput( array(
 			'command'                => 'install',
 			'--working-dir'          => $path,
 			'--ignore-platform-reqs' => true,
 			'--optimize-autoloader'  => true,
-		) );
-		$output      = new ConsoleOutput();
-		$application = new Application();
-		$application->run( $input, $output );
+		) ), $output );
 	}
 }
