@@ -107,8 +107,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$scoperConfig      = $this->createScoperConfig( $this->tempDir, $source, $destination );
 
 			$commands = array(
-				'@php-scoper add-prefix --output-dir=' . $destination . ' --force --config=' . $scoperConfig,
-				'@composer dump-autoload --working-dir=' . $destination . ' --ignore-platform-reqs --optimize',
+				'php-scoper add-prefix --output-dir=' . $destination . ' --force --config=' . $scoperConfig,
+				'composer dump-autoload --working-dir=' . $destination . ' --ignore-platform-reqs --optimize',
 				'rm -rf ' . $this->folder,
 				'mv ' . $destinationVendor . ' ' . $this->folder,
 				'rm -rf ' . $this->tempDir,
