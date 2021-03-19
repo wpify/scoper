@@ -8,6 +8,7 @@ use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
+use Composer\Script\ScriptEvents;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
@@ -35,8 +36,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
 	public static function getSubscribedEvents() {
 		return array(
-			'post-install-cmd' => array( 'handleScoping' ),
-			'post-update-cmd'  => array( 'handleScoping' ),
+			ScriptEvents::POST_INSTALL_CMD => 'handleScoping',
+			ScriptEvents::POST_UPDATE_CMD  => 'handleScoping',
 		);
 	}
 
@@ -47,7 +48,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$extra  = $composer->getPackage()->getExtra();
 		$prefix = $this->toCamelCase( $composer->getPackage()->getName() );
 
-		$config_values = array(
+		$configValues = array(
 			'folder'   => getcwd() . DIRECTORY_SEPARATOR . 'vendor-scoped',
 			'temp'     => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'wordpress-scopper' . DIRECTORY_SEPARATOR . $prefix,
 			'prefix'   => $prefix,
@@ -56,30 +57,30 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		);
 
 		if ( ! empty( $extra['wordpress-scoper']['folder'] ) ) {
-			$config_values['folder'] = getcwd() . DIRECTORY_SEPARATOR . $extra['wordpress-scoper']['folder'];
+			$configValues['folder'] = getcwd() . DIRECTORY_SEPARATOR . $extra['wordpress-scoper']['folder'];
 		}
 
 		if ( ! empty( $extra['wordpress-scoper']['prefix'] ) ) {
-			$config_values['prefix'] = $extra['wordpress-scoper']['prefix'];
+			$configValues['prefix'] = $extra['wordpress-scoper']['prefix'];
 		}
 
 		if ( ! empty( $extra['wordpress-scoper']['globals'] ) && is_array( $extra['wordpress-scoper']['globals'] ) ) {
-			$config_values['globals'] = $extra['wordpress-scoper']['globals'];
+			$configValues['globals'] = $extra['wordpress-scoper']['globals'];
 		}
 
 		if ( ! empty( $extra['wordpress-scoper']['packages'] ) && is_array( $extra['wordpress-scoper']['packages'] ) ) {
-			$config_values['packages'] = $extra['wordpress-scoper']['packages'];
+			$configValues['packages'] = $extra['wordpress-scoper']['packages'];
 		}
 
 		if ( ! empty( $extra['wordpress-scoper']['temp'] ) ) {
-			$config_values['temp'] = getcwd() . DIRECTORY_SEPARATOR . $extra['wordpress-scoper']['temp'];
+			$configValues['temp'] = getcwd() . DIRECTORY_SEPARATOR . $extra['wordpress-scoper']['temp'];
 		}
 
-		$this->folder   = $config_values['folder'];
-		$this->prefix   = $config_values['prefix'];
-		$this->globals  = $config_values['globals'];
-		$this->packages = $config_values['packages'];
-		$this->tempDir  = $config_values['temp'];
+		$this->folder   = $configValues['folder'];
+		$this->prefix   = $configValues['prefix'];
+		$this->globals  = $configValues['globals'];
+		$this->packages = $configValues['packages'];
+		$this->tempDir  = $configValues['temp'];
 	}
 
 	public function toCamelCase( string $source = '' ) {
@@ -106,8 +107,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$scoperConfig      = $this->createScoperConfig( $this->tempDir, $source, $destination );
 
 			$commands = array(
-				'php-scoper add-prefix --output-dir=' . $destination . ' --force --config=' . $scoperConfig,
-				'composer dump-autoload --working-dir=' . $destination . ' --ignore-platform-reqs --optimize',
+				'@php-scoper add-prefix --output-dir=' . $destination . ' --force --config=' . $scoperConfig,
+				'@composer dump-autoload --working-dir=' . $destination . ' --ignore-platform-reqs --optimize',
 				'rm -rf ' . $this->folder,
 				'mv ' . $destinationVendor . ' ' . $this->folder,
 				'rm -rf ' . $this->tempDir,
@@ -130,6 +131,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$inc_path    = $this->createPath( array( __DIR__, '..', 'config', 'scoper.inc.php' ) );
 		$config_path = $this->createPath( array( __DIR__, '..', 'config', 'scoper.config.php' ) );
 		$final_path  = $path . DIRECTORY_SEPARATOR . 'scoper.inc.php';
+		$symbols_dir = realpath( __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'symbols' );
 
 		$this->createFolder( $path );
 		$this->createFolder( $source );
@@ -140,8 +142,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$config['source']      = $source;
 		$config['destination'] = $destination;
 		$config['whitelist']   = array();
-
-		$symbols_dir = realpath( __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'symbols' );
 
 		if ( in_array( 'wordpress', $this->globals ) ) {
 			$config['whitelist'] = array_merge_recursive(
