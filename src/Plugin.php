@@ -47,11 +47,12 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$this->io       = $io;
 
 		$extra = $composer->getPackage()->getExtra();
+		$prefix = $this->toCamelCase( $composer->getPackage()->getName() );
 
 		$config_values = array(
 			'folder'   => getcwd() . DIRECTORY_SEPARATOR . 'vendor-scoped',
-			'temp'     => getcwd() . DIRECTORY_SEPARATOR . 'vendor-extra',
-			'prefix'   => $this->toCamelCase( $composer->getPackage()->getName() ),
+			'temp'     => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'wordpress-scopper' . DIRECTORY_SEPARATOR . $prefix,
+			'prefix'   => $prefix,
 			'globals'  => array( 'wordpress' ),
 			'packages' => array(),
 		);
@@ -107,11 +108,17 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
 	public function handleInstall( CommandEvent $event ) {
 		if ( ! empty( $this->packages ) ) {
-			$scoperConfig = $this->createScoperConfig( $this->tempDir );
+			$source            = $this->tempDir . DIRECTORY_SEPARATOR . 'source';
+			$destination       = $this->tempDir . DIRECTORY_SEPARATOR . 'destination';
+			$destinationVendor = $destination . DIRECTORY_SEPARATOR . 'vendor';
+			$scoperConfig      = $this->createScoperConfig( $this->tempDir, $source, $destination );
 
 			$commands = array(
-				'php-scoper add-prefix --output-dir=' . $this->folder . ' --force --config=' . $scoperConfig,
-				'composer dump-autoload --working-dir=' . $this->folder . ' --ignore-platform-reqs --optimize',
+				'php-scoper add-prefix --output-dir=' . $destination . ' --force --config=' . $scoperConfig,
+				'composer dump-autoload --working-dir=' . $destination . ' --ignore-platform-reqs --optimize',
+				'rm -rf ' . $this->folder,
+				'mv ' . $destinationVendor . ' ' . $this->folder,
+				'rm -rf ' . $this->tempDir,
 			);
 
 			$composerJson = array(
@@ -122,22 +129,24 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 				),
 			);
 
-			$this->createJson( strval( $this->tempDir . '/composer.json' ), $composerJson );
-			$this->runInstall( $this->tempDir );
+			$this->createJson( strval( $source . DIRECTORY_SEPARATOR . 'composer.json' ), $composerJson );
+			$this->runInstall( $source );
 		}
 	}
 
-	private function createScoperConfig( string $path ) {
+	private function createScoperConfig( string $path, string $source, string $destination ) {
 		$inc_path    = $this->createPath( array( __DIR__, '..', 'config', 'scoper.inc.php' ) );
 		$config_path = $this->createPath( array( __DIR__, '..', 'config', 'scoper.config.php' ) );
+		$final_path  = $path . DIRECTORY_SEPARATOR . 'scoper.inc.php';
+
 		$this->createFolder( $path );
-		$this->createFolder( $this->tempDir );
-		$final_path = $path . DIRECTORY_SEPARATOR . 'scoper.inc.php';
+		$this->createFolder( $source );
+		$this->createFolder( $destination );
 
 		$config                = require_once $config_path;
 		$config['prefix']      = $this->prefix;
-		$config['source']      = $this->tempDir;
-		$config['destination'] = $this->folder;
+		$config['source']      = $source;
+		$config['destination'] = $destination;
 		$config['whitelist']   = array();
 
 		$symbols_dir = realpath( __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'symbols' );
@@ -179,10 +188,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	}
 
 	private function runInstall( string $path ) {
-		$output = new ConsoleOutput();
-
+		$output      = new ConsoleOutput();
 		$application = new Application();
-		$application->run( new ArrayInput( array(
+
+		return $application->run( new ArrayInput( array(
 			'command'                => 'install',
 			'--working-dir'          => $path,
 			'--ignore-platform-reqs' => true,
