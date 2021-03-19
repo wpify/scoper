@@ -6,9 +6,8 @@ use Composer\Composer;
 use Composer\Console\Application;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
-use Composer\Plugin\CommandEvent;
-use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
+use Composer\Script\Event;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
@@ -36,9 +35,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
 	public static function getSubscribedEvents() {
 		return array(
-			PluginEvents::COMMAND => array(
-				array( 'handleCommand' ),
-			)
+			'post-install-cmd' => array( 'handleScoping' ),
+			'post-update-cmd'  => array( 'handleScoping' ),
 		);
 	}
 
@@ -46,7 +44,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$this->composer = $composer;
 		$this->io       = $io;
 
-		$extra = $composer->getPackage()->getExtra();
+		$extra  = $composer->getPackage()->getExtra();
 		$prefix = $this->toCamelCase( $composer->getPackage()->getName() );
 
 		$config_values = array(
@@ -100,13 +98,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		// TODO: Implement uninstall() method.
 	}
 
-	public function handleCommand( CommandEvent $event ) {
-		if ( $event->getCommandName() === 'install' ) {
-			$this->handleInstall( $event );
-		}
-	}
-
-	public function handleInstall( CommandEvent $event ) {
+	public function handleScoping( Event $event ) {
 		if ( ! empty( $this->packages ) ) {
 			$source            = $this->tempDir . DIRECTORY_SEPARATOR . 'source';
 			$destination       = $this->tempDir . DIRECTORY_SEPARATOR . 'destination';
