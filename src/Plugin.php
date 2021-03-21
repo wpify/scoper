@@ -141,7 +141,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$config['prefix']      = $this->prefix;
 		$config['source']      = $source;
 		$config['destination'] = $destination;
-		$config['whitelist']   = array('NULL');
+		$config['whitelist']   = array( 'NULL' );
 
 		if ( in_array( 'wordpress', $this->globals ) ) {
 			$config['whitelist'] = array_merge_recursive(
