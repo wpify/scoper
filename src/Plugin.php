@@ -130,6 +130,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	private function createScoperConfig( string $path, string $source, string $destination ) {
 		$inc_path    = $this->createPath( array( __DIR__, '..', 'config', 'scoper.inc.php' ) );
 		$config_path = $this->createPath( array( __DIR__, '..', 'config', 'scoper.config.php' ) );
+		$custom_path = $this->createPath( array( getcwd(), 'scoper.custom.php' ) );
 		$final_path  = $path . DIRECTORY_SEPARATOR . 'scoper.inc.php';
 		$symbols_dir = realpath( __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'symbols' );
 
@@ -155,6 +156,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 				$config['whitelist'],
 				require $symbols_dir . DIRECTORY_SEPARATOR . 'woocommerce.php'
 			);
+		}
+
+		if ( file_exists( $custom_path ) ) {
+			copy( $custom_path, $path . DIRECTORY_SEPARATOR . 'scoper.custom.php' );
 		}
 
 		copy( $inc_path, $path . DIRECTORY_SEPARATOR . 'scoper.inc.php' );

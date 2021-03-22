@@ -4,12 +4,24 @@ use Isolated\Symfony\Component\Finder\Finder;
 
 $config = require_once __DIR__ . '/scoper.config.php';
 
+$project_customizations = __DIR__ . '/scoper.custom.php';
+
+if ( file_exists( $project_customizations ) ) {
+	require_once $project_customizations;
+}
+
+if ( ! function_exists( 'customize_php_scoper_config' ) ) {
+	function customize_php_scoper_config( array $config = array() ) {
+		return $config;
+	}
+}
+
 $prefix      = $config['prefix'];
 $whitelist   = $config['whitelist'];
 $source      = $config['source'];
 $destination = $config['destination'];
 
-return array(
+return customize_php_scoper_config( array(
 	'prefix'                     => $prefix,
 	'finders'                    => array(
 		Finder::create()
@@ -57,4 +69,4 @@ return array(
 	'whitelist-global-constants' => false,
 	'whitelist-global-classes'   => false,
 	'whitelist-global-functions' => false,
-);
+) );
