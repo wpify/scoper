@@ -54,6 +54,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			'prefix'   => $prefix,
 			'globals'  => array( 'wordpress' ),
 			'packages' => array(),
+			'repositories' => array(),
 		);
 
 		if ( ! empty( $extra['wordpress-scoper']['folder'] ) ) {
@@ -72,15 +73,20 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$configValues['packages'] = $extra['wordpress-scoper']['packages'];
 		}
 
+		if ( ! empty( $extra['wordpress-scoper']['repositories'] ) && is_array( $extra['wordpress-scoper']['repositories'] ) ) {
+			$configValues['repositories'] = $extra['wordpress-scoper']['repositories'];
+		}
+
 		if ( ! empty( $extra['wordpress-scoper']['temp'] ) ) {
 			$configValues['temp'] = getcwd() . DIRECTORY_SEPARATOR . $extra['wordpress-scoper']['temp'];
 		}
 
-		$this->folder   = $configValues['folder'];
-		$this->prefix   = $configValues['prefix'];
-		$this->globals  = $configValues['globals'];
-		$this->packages = $configValues['packages'];
-		$this->tempDir  = $configValues['temp'];
+		$this->folder       = $configValues['folder'];
+		$this->prefix       = $configValues['prefix'];
+		$this->globals      = $configValues['globals'];
+		$this->packages     = $configValues['packages'];
+		$this->repositories = $configValues['repositories'];
+		$this->tempDir      = $configValues['temp'];
 	}
 
 	public function toCamelCase( string $source = '' ) {
@@ -115,8 +121,9 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			);
 
 			$composerJson = array(
-				'require' => $this->packages,
-				'scripts' => array(
+				'repositories' => $this->repositories,
+				'require'      => $this->packages,
+				'scripts'      => array(
 					'post-install-cmd' => $commands,
 					'post-update-cmd'  => $commands,
 				),
