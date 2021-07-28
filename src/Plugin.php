@@ -200,7 +200,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			'--working-dir'          => $path,
 			'--ignore-platform-reqs' => true,
 			'--optimize-autoloader'  => true,
-			'--no-cache'  => true,
 		) ), $output );
 	}
 }
