@@ -2,6 +2,7 @@
 
 use PhpParser\Node;
 use PhpParser\ParserFactory;
+use PhpParser\Error;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -51,8 +52,6 @@ function resolve( Node $node ) {
 		&& in_array( 'define', $node->expr->name->parts )
 	) {
 		return array( $node->expr->args[0]->value->value );
-	} else {
-		//var_dump( $node );
 	}
 
 	return array();
@@ -63,14 +62,14 @@ function getFiles( string $folder ) {
 	$files = array();
 
 	foreach ( $found as $file ) {
-		$normalizedPath = str_replace( realpath( __DIR__ . '/../sources/' ), '', $file );
+		$normalizedPath = realpath( str_replace( realpath( __DIR__ . '/../sources/' ), '', $file ) );
 
 		if ( preg_match( "/\/vendor\//i", $normalizedPath ) || preg_match( "/\/wp-content\//i", $normalizedPath ) ) {
 			continue;
 		}
 
 		if ( preg_match( "/\.php$/i", $normalizedPath ) ) {
-			$files[] = $file;
+			$files[] = $normalizedPath;
 		}
 	}
 
@@ -89,7 +88,7 @@ function extractSymbols( string $where, string $result ) {
 				$symbols = array_merge( $symbols, resolve( $node ) );
 			}
 		} catch ( Error $error ) {
-			echo "Parse error: {$error->getMessage()}\n";
+			echo "Parse error: {$error->getMessage()} in {$file}\n";
 
 			return;
 		}
