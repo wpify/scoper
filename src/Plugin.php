@@ -39,8 +39,12 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
 	public static function getSubscribedEvents() {
 		return array(
-			ScriptEvents::POST_INSTALL_CMD => 'handleScoping',
-			ScriptEvents::POST_UPDATE_CMD  => 'handleScoping',
+			ScriptEvents::POST_INSTALL_CMD => array(
+				array( 'handleScoping' ),
+			),
+			ScriptEvents::POST_UPDATE_CMD  => array(
+				array( 'handleScoping' ),
+			),
 		);
 	}
 
@@ -141,7 +145,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			}
 
 			$composerJson->scripts->{'post-install-cmd'} = $commands;
-			$composerJson->scripts->{'post-update-cmd'} = $commands;
+			$composerJson->scripts->{'post-update-cmd'}  = $commands;
 
 			$this->createJson( $composerJsonPath, $composerJson );
 
