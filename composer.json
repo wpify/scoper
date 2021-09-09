@@ -25,7 +25,9 @@
     }
   ],
   "require": {
-    "composer-plugin-api": "^2.1"
+    "composer-plugin-api": "^2.1",
+    "humbug/php-scoper": "^0.15",
+    "jetbrains/phpstorm-stubs": "^2020.2"
   },
   "require-dev": {
     "composer/composer": "^2.1",
@@ -43,10 +45,6 @@
       "sources/theme-{$name}/": [
         "type:wordpress-theme"
       ]
-    },
-    "require-scoper": {
-      "humbug/php-scoper": "^0.15",
-      "jetbrains/phpstorm-stubs": "^2020.2"
     }
   }
 }
