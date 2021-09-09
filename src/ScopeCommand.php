@@ -85,7 +85,7 @@ class ScopeCommand extends BaseCommand {
 			$scoperConfig      = $this->createScoperConfig( $this->tempDir, $source, $destination );
 
 			$commands = array(
-				'php-scoper add-prefix --output-dir=' . $destination . ' --force --config=' . $scoperConfig,
+				getcwd() . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'php-scoper add-prefix --output-dir=' . $destination . ' --force --config=' . $scoperConfig,
 				'composer dump-autoload --working-dir=' . $destination . ' --ignore-platform-reqs --optimize',
 				'cp "' . $source . DIRECTORY_SEPARATOR . 'composer.lock" "' . getcwd() . DIRECTORY_SEPARATOR . $this->composerlock . '"',
 				'rm -rf ' . $this->folder,
@@ -95,6 +95,7 @@ class ScopeCommand extends BaseCommand {
 
 			$composerJsonPath = $source . DIRECTORY_SEPARATOR . 'composer.json';
 			$composerLockPath = $source . DIRECTORY_SEPARATOR . 'composer.lock';
+			$rootcomposer     = json_decode( file_get_contents( getcwd() . DIRECTORY_SEPARATOR . 'composer.json' ), false );
 
 			if ( file_exists( getcwd() . DIRECTORY_SEPARATOR . $this->composerjson ) ) {
 				$composerJson = json_decode( file_get_contents( getcwd() . DIRECTORY_SEPARATOR . $this->composerjson ), false );

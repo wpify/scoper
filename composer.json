@@ -1,46 +1,52 @@
 {
-    "name": "wpify/scoper",
-    "description": "Composer plugin that scopes WordPress and WooCommerce dependencies for usage in WordPress plugins and themes.",
-    "type": "composer-plugin",
-    "autoload": {
-        "psr-4": {
-            "Wpify\\Scoper\\": "src/"
-        }
-    },
-    "license": "GPL-2.0-or-later",
-    "authors": [
-        {
-            "name": "Daniel Mejta",
-            "email": "daniel@mejta.net"
-        }
-    ],
-    "scripts": {
-        "extract": "php ./scripts/extract-symbols.php"
-    },
-    "minimum-stability": "stable",
-    "repositories":[
-        {
-            "type":"composer",
-            "url":"https://wpackagist.org"
-        }
-    ],
-    "require": {
-        "humbug/php-scoper": "^0.15",
-        "jetbrains/phpstorm-stubs": "^2020.2",
-        "composer-plugin-api": "^2.1"
-    },
-    "require-dev": {
-        "composer/composer": "^2.1",
-        "johnpbloch/wordpress": "^5.8",
-        "wpackagist-plugin/woocommerce": "^5.6",
-        "nikic/php-parser": "^4.12"
-    },
-    "extra": {
-        "class": "Wpify\\Scoper\\Plugin",
-        "wordpress-install-dir": "sources/wordpress",
-        "installer-paths": {
-            "sources/plugin-{$name}/": ["type:wordpress-plugin"],
-            "sources/theme-{$name}/": ["type:wordpress-theme"]
-        }
+  "name": "wpify/scoper",
+  "description": "Composer plugin that scopes WordPress and WooCommerce dependencies for usage in WordPress plugins and themes.",
+  "type": "composer-plugin",
+  "autoload": {
+    "psr-4": {
+      "Wpify\\Scoper\\": "src/"
     }
+  },
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Daniel Mejta",
+      "email": "daniel@mejta.net"
+    }
+  ],
+  "scripts": {
+    "extract": "php ./scripts/extract-symbols.php"
+  },
+  "minimum-stability": "stable",
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://wpackagist.org"
+    }
+  ],
+  "require": {
+    "composer-plugin-api": "^2.1"
+  },
+  "require-dev": {
+    "composer/composer": "^2.1",
+    "johnpbloch/wordpress": "^5.8",
+    "wpackagist-plugin/woocommerce": "^5.6",
+    "nikic/php-parser": "^4.12"
+  },
+  "extra": {
+    "class": "Wpify\\Scoper\\Plugin",
+    "wordpress-install-dir": "sources/wordpress",
+    "installer-paths": {
+      "sources/plugin-{$name}/": [
+        "type:wordpress-plugin"
+      ],
+      "sources/theme-{$name}/": [
+        "type:wordpress-theme"
+      ]
+    },
+    "require-scoper": {
+      "humbug/php-scoper": "^0.15",
+      "jetbrains/phpstorm-stubs": "^2020.2"
+    }
+  }
 }

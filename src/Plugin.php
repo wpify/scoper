@@ -9,7 +9,13 @@ use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 
 class Plugin implements PluginInterface, Capable, CommandProvider {
-	public function activate( Composer $composer, IOInterface $io ) {
+	protected $composer;
+	protected $io;
+
+	public function activate(Composer $composer, IOInterface $io)
+	{
+		$this->composer = $composer;
+		$this->io = $io;
 	}
 
 	public function deactivate( Composer $composer, IOInterface $io ) {
