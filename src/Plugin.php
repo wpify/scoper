@@ -6,8 +6,9 @@ use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
+use \Composer\Plugin\Capability\CommandProvider;
 
-class Plugin implements PluginInterface, Capable {
+class Plugin implements PluginInterface, Capable, CommandProvider {
 	public function activate( Composer $composer, IOInterface $io ) {
 	}
 
@@ -19,7 +20,11 @@ class Plugin implements PluginInterface, Capable {
 
 	public function getCapabilities() {
 		return array(
-			'Composer\Plugin\Capability\CommandProvider' => CommandProvider::class,
+			CommandProvider::class => self::class,
 		);
+	}
+
+	public function getCommands() {
+		return array( new ScopeCommand );
 	}
 }
