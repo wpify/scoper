@@ -4,9 +4,9 @@ namespace Wpify\Scoper;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
+use Composer\Plugin\Capability\CommandProvider;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
-use \Composer\Plugin\Capability\CommandProvider;
 
 class Plugin implements PluginInterface, Capable, CommandProvider {
 	public function activate( Composer $composer, IOInterface $io ) {
