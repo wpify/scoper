@@ -29,7 +29,6 @@ class ScopeCommand extends BaseCommand {
 	private $tempDir;
 
 	protected function configure() {
-		$this->setName( 'scope' );
 	}
 
 	protected function execute( InputInterface $input, OutputInterface $output ) {
