@@ -40,10 +40,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	public static function getSubscribedEvents() {
 		return array(
 			ScriptEvents::POST_INSTALL_CMD => array(
-				array( 'handleScoping' ),
+				array( 'handleScoping', 100 ),
 			),
 			ScriptEvents::POST_UPDATE_CMD  => array(
-				array( 'handleScoping' ),
+				array( 'handleScoping', 100 ),
 			),
 		);
 	}
