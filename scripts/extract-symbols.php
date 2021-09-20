@@ -89,8 +89,6 @@ function extractSymbols( string $where, string $result ) {
 			}
 		} catch ( Error $error ) {
 			echo "Parse error: {$error->getMessage()} in {$file}\n";
-
-			return;
 		}
 	}
 
