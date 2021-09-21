@@ -33,7 +33,8 @@
     "composer/composer": "^2.1",
     "johnpbloch/wordpress": "^5",
     "wpackagist-plugin/woocommerce": "^5",
-    "nikic/php-parser": "^4.12"
+    "nikic/php-parser": "^4.12",
+    "yahnis-elsts/plugin-update-checker": "^4.11"
   },
   "extra": {
     "class": "Wpify\\Scoper\\Plugin",
@@ -44,6 +45,9 @@
       ],
       "sources/theme-{$name}/": [
         "type:wordpress-theme"
+      ],
+      "sources/library-{$name}": [
+        "yahnis-elsts/plugin-update-checker"
       ]
     }
   }
