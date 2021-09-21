@@ -44,6 +44,10 @@ return customize_php_scoper_config( array(
 				$content = str_replace( "namespace $prefix;", '', $content );
 			}
 
+			if ( strpos( $filePath, 'yahnis-elsts/plugin-update-checker/Puc/v4p11/UpdateChecker.php' ) !== false ) {
+				$content = str_replace( "namespace $prefix;", "namespace $prefix;\n\nuse WP_Error;", $content );
+			}
+
 			usort( $whitelist, function ( $a, $b ) {
 				return strlen( $b ) - strlen( $a );
 			} );
