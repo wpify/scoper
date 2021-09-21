@@ -109,10 +109,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		);
 	}
 
-	public function getCommands() {
-		return array( new ScopeCommand( 'scope' ) );
-	}
-
 	public function execute( Event $event ) {
 		if ( ! empty( $this->prefix ) ) {
 			$source            = $this->tempDir . DIRECTORY_SEPARATOR . 'source';
@@ -195,6 +191,13 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$config['whitelist'] = array_merge_recursive(
 				$config['whitelist'],
 				require $symbols_dir . DIRECTORY_SEPARATOR . 'woocommerce.php'
+			);
+		}
+
+		if ( in_array( 'plugin-update-checker', $this->globals ) ) {
+			$config['whitelist'] = array_merge_recursive(
+				$config['whitelist'],
+				require $symbols_dir . DIRECTORY_SEPARATOR . 'plugin-update-checker.php'
 			);
 		}
 
