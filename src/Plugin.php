@@ -47,7 +47,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$this->io       = $io;
 
 		$extra  = $composer->getPackage()->getExtra();
-		$prefix = $this->toCamelCase( $composer->getPackage()->getName() );
+		$prefix = null;
 
 		$configValues = array(
 			'folder'       => getcwd() . DIRECTORY_SEPARATOR . 'deps',
@@ -93,10 +93,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$this->composerlock = $configValues['composerlock'];
 	}
 
-	public function toCamelCase( string $source = '' ) {
-		return str_replace( ' ', '', ucwords( preg_replace( '/[^a-zA-Z0-9]+/', ' ', $source ) ) );
-	}
-
 	public function deactivate( Composer $composer, IOInterface $io ) {
 	}
 
@@ -112,7 +108,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	public function execute( Event $event ) {
 		if ( ! empty( $this->prefix ) ) {
 			$source            = $this->tempDir . DIRECTORY_SEPARATOR . 'source';
-			$destination       = $this->tempDir . DIRECTORY_SEPARATOR . 'destination';
+			$destination       = $this->tempDir . DIRECTORY_SEPARATOR . 'destination' ;
 			$destinationVendor = $destination . DIRECTORY_SEPARATOR . 'vendor';
 			$scoperConfig      = $this->createScoperConfig( $this->tempDir, $source, $destination );
 
@@ -174,7 +170,12 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$this->createFolder( $source );
 		$this->createFolder( $destination );
 
-		$config                = require_once $config_path;
+		$config = require_once $config_path;
+
+		if ( ! is_array( $config ) ) {
+			exit;
+		}
+
 		$config['prefix']      = $this->prefix;
 		$config['source']      = $source;
 		$config['destination'] = $destination;
@@ -212,7 +213,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	}
 
 	private function createPath( array $parts ) {
-		return DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
+		return realpath( DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts ) );
 	}
 
 	private function createFolder( string $path ) {
