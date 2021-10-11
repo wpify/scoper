@@ -1,8 +1,8 @@
 <?php
 
+use PhpParser\Error;
 use PhpParser\Node;
 use PhpParser\ParserFactory;
-use PhpParser\Error;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -58,18 +58,21 @@ function resolve( Node $node ) {
 }
 
 function getFiles( string $folder ) {
-	$found = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $folder ), RecursiveIteratorIterator::SELF_FIRST );
 	$files = array();
 
-	foreach ( $found as $file ) {
-		$normalizedPath = realpath( str_replace( realpath( __DIR__ . '/../sources/' ), '', $file ) );
+	if ( file_exists( $folder ) ) {
+		$found = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $folder ), RecursiveIteratorIterator::SELF_FIRST );
 
-		if ( preg_match( "/\/vendor\//i", $normalizedPath ) || preg_match( "/\/wp-content\//i", $normalizedPath ) ) {
-			continue;
-		}
+		foreach ( $found as $file ) {
+			$normalizedPath = realpath( str_replace( realpath( __DIR__ . '/../sources/' ), '', $file ) );
 
-		if ( preg_match( "/\.php$/i", $normalizedPath ) ) {
-			$files[] = $normalizedPath;
+			if ( preg_match( "/\/vendor\//i", $normalizedPath ) || preg_match( "/\/wp-content\//i", $normalizedPath ) ) {
+				continue;
+			}
+
+			if ( preg_match( "/\.php$/i", $normalizedPath ) ) {
+				$files[] = $normalizedPath;
+			}
 		}
 	}
 
@@ -107,4 +110,5 @@ function extractSymbols( string $where, string $result ) {
 
 extractSymbols( __DIR__ . '/../sources/wordpress', realpath( __DIR__ . '/../symbols' ) . '/wordpress.php' );
 extractSymbols( __DIR__ . '/../sources/plugin-woocommerce', realpath( __DIR__ . '/../symbols' ) . '/woocommerce.php' );
-//extractSymbols( __DIR__ . '/../vendor/yahnis-elsts/plugin-update-checker', realpath( __DIR__ . '/../symbols' ) . '/plugin-update-checker.php' );
+extractSymbols( __DIR__ . '/../vendor/yahnis-elsts/plugin-update-checker', realpath( __DIR__ . '/../symbols' ) . '/plugin-update-checker.php' );
+extractSymbols( __DIR__ . '/../sources/plugin-action-scheduler/', realpath( __DIR__ . '/../symbols' ) . '/action-scheduler.php' );
