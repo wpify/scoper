@@ -110,5 +110,5 @@ function extractSymbols( string $where, string $result ) {
 
 extractSymbols( __DIR__ . '/../sources/wordpress', realpath( __DIR__ . '/../symbols' ) . '/wordpress.php' );
 extractSymbols( __DIR__ . '/../sources/plugin-woocommerce', realpath( __DIR__ . '/../symbols' ) . '/woocommerce.php' );
-extractSymbols( __DIR__ . '/../vendor/yahnis-elsts/plugin-update-checker', realpath( __DIR__ . '/../symbols' ) . '/plugin-update-checker.php' );
+//extractSymbols( __DIR__ . '/../vendor/yahnis-elsts/plugin-update-checker', realpath( __DIR__ . '/../symbols' ) . '/plugin-update-checker.php' );
 extractSymbols( __DIR__ . '/../sources/plugin-action-scheduler/', realpath( __DIR__ . '/../symbols' ) . '/action-scheduler.php' );
