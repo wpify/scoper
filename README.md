@@ -27,20 +27,29 @@ The main issue with PHP Scoper is that it also scopes global functions, constant
   "extra": {
 	"wpify-scoper": {
 	  "prefix": "MyNamespaceForDeps",
-      "folder": "deps",
-      "globals": ["wordpress", "woocommerce"],
-      "composerjson": "composer-deps.json",
-      "composerlock": "composer-deps.lock"
+	  "folder": "deps",
+	  "globals": ["wordpress", "woocommerce"],
+	  "composerjson": "composer-deps.json",
+	  "composerlock": "composer-deps.lock"
 	}
   }
 }
 ```
 
-4. Scoped dependencies will be in `deps` folder of your project. You must include the scoped autoload alongside with the composer autoloader:
+4. Scoped dependencies will be in `deps` folder of your project. You must include the scoped autoload alongside with the composer autoloader.
+
+5. After that, you can use your dependencies with the namespace.
+
+**Example PHP file:**
 
 ```php
+use MyNamespaceForDeps\Example\Dependency;
+
 require_once __DIR__ . '/deps/scoper-autoload.php';
 include_once __DIR__ . '/vendor/autoload.php';
+
+$example_dependency = new Dependency();
+
 ```
 
 ## Manual deployment
