@@ -53,7 +53,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			'folder'       => getcwd() . DIRECTORY_SEPARATOR . 'deps',
 			'temp'         => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'wpify-scopper' . DIRECTORY_SEPARATOR . $prefix,
 			'prefix'       => $prefix,
-			'globals'      => array( 'wordpress' ),
+			'globals'      => array( 'wordpress', 'woocommerce' ),
 			'composerjson' => 'composer-deps.json',
 			'composerlock' => 'composer-deps.lock',
 		);
