@@ -1,8 +1,8 @@
 # WPify Scoper - A scoper for the WordPress plugins and themes
 
-By using composer in your WordPress plugin or theme, you can benefit from that. It also comes with danger of conflicts with dependencies of other plugins or themes. Luckily, there is a great tool called [PHP Scoper](https://github.com/humbug/php-scoper), that add all your needed dependencies to your namespace to prevent conflicts. Unfortunately, the configuration is non-trivial and for that reason, this Composer plugin was created. It helps you to use scoper with your WordPress projects.
+Using Composer in your WordPress plugin or theme can benefit from that. But it also comes with a danger of conflicts with dependencies of other plugins or themes. Luckily, a great tool called [PHP Scoper](https://github.com/humbug/php-scoper) adds all your needed dependencies to your namespace to prevent conflicts. Unfortunately, the configuration is non-trivial, and for that reason, we created the Composer plugin to make scoping easy in WordPress projects.
 
-The main issue with PHP Scoper is that it also scopes global functions, constants and classes. That is usually what you want, but that also means that WordPress functions, classes and constants will be scoped as well. This Composer solves that. It has up-to-date database of all WordPress and WooCommerce symbols, that we want to keep unscoped.
+The main issue with PHP Scoper is that it also scopes global functions, constants and classes. Usually, that is what you want, but that also means that WordPress functions, classes and constants will be scoped. This Composer solves that. It has an up-to-date database of all WordPress and WooCommerce symbols that we want to keep unscoped.
 
 ## Requirements
 
