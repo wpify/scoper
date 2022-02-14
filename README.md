@@ -6,7 +6,7 @@ The main issue with PHP Scoper is that it also scopes global functions, constant
 
 ## Requirements
 
-* MacOS or Linux operating system (Windows are not supported)
+* MacOS or Linux operating system (MS Windows is not supported)
 * PHP 7.4+
 
 ## Usage
