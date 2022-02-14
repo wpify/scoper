@@ -43,6 +43,7 @@ The main issue with PHP Scoper is that it also scopes global functions, constant
 **Example PHP file:**
 
 ```php
+<?php
 use MyNamespaceForDeps\Example\Dependency;
 
 require_once __DIR__ . '/deps/scoper-autoload.php';
