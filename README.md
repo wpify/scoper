@@ -1,4 +1,4 @@
-# WPify Scoper - A scoper for the WordPress plugins and themes
+# WPify Scoper - A scoper for WordPress plugins and themes
 
 Using Composer in your WordPress plugin or theme can benefit from that. But it also comes with a danger of conflicts with dependencies of other plugins or themes. Luckily, a great tool called [PHP Scoper](https://github.com/humbug/php-scoper) adds all your needed dependencies to your namespace to prevent conflicts. Unfortunately, the configuration is non-trivial, and for that reason, we created the Composer plugin to make scoping easy in WordPress projects.
 
@@ -22,7 +22,8 @@ The main issue with PHP Scoper is that it also scopes global functions, constant
 ```json
 {
   "require-dev": {
-    "wpify/scoper": "^2.4"
+    "wpify/scoper": "^2.4",
+    "example/dependency": "^1.0"
   },
   "extra": {
 	"wpify-scoper": {
@@ -44,16 +45,13 @@ The main issue with PHP Scoper is that it also scopes global functions, constant
 
 ```php
 <?php
-use MyNamespaceForDeps\Example\Dependency;
-
 require_once __DIR__ . '/deps/scoper-autoload.php';
 include_once __DIR__ . '/vendor/autoload.php';
 
-$example_dependency = new Dependency();
-
+new \MyNamespaceForDeps\Example\Dependency();
 ```
 
-## Manual deployment
+## Deployment
 
 When you want to deploy the project, you need to scope your dependencies, but not to include dev depencencies. That can be achieved by following commands:
 
