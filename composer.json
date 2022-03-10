@@ -26,7 +26,7 @@
   ],
   "require": {
     "composer-plugin-api": "^2.1",
-    "humbug/php-scoper": "0.17.0",
+    "humbug/php-scoper": "0.17.2",
     "jetbrains/phpstorm-stubs": "^2021.3",
     "woocommerce/action-scheduler": "^3.4"
   },
@@ -47,6 +47,9 @@
       "sources/theme-{$name}/": [
         "type:wordpress-theme"
       ]
+    },
+    "textdomain": {
+      "wpify-custom-fields": "some-new-textdomain"
     }
   }
 }

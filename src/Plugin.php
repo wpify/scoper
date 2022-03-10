@@ -14,229 +14,234 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
 class Plugin implements PluginInterface, EventSubscriberInterface {
-	protected $composer;
-	protected $io;
+    protected $composer;
+    protected $io;
 
-	/** @var string */
-	private $folder;
+    /** @var string */
+    private $folder;
 
-	/** @var string */
-	private $prefix;
+    /** @var string */
+    private $prefix;
 
-	/** @var array */
-	private $globals;
+    /** @var array */
+    private $globals;
 
-	/** @var string */
-	private $composerjson;
+    /** @var string */
+    private $composerjson;
 
-	/** @var string */
-	private $composerlock;
+    /** @var string */
+    private $composerlock;
 
-	/** @var string */
-	private $tempDir;
+    /** @var string */
+    private $tempDir;
 
-	public static function getSubscribedEvents() {
-		return array(
-			ScriptEvents::POST_INSTALL_CMD => 'execute',
-			ScriptEvents::POST_UPDATE_CMD  => 'execute',
-		);
-	}
+    public static function getSubscribedEvents() {
+        return array(
+            ScriptEvents::POST_INSTALL_CMD => 'execute',
+            ScriptEvents::POST_UPDATE_CMD  => 'execute',
+        );
+    }
 
-	public function activate( Composer $composer, IOInterface $io ) {
-		$this->composer = $composer;
-		$this->io       = $io;
+    public function activate( Composer $composer, IOInterface $io ) {
+        $this->composer = $composer;
+        $this->io       = $io;
 
-		$extra  = $composer->getPackage()->getExtra();
-		$prefix = null;
+        $extra  = $composer->getPackage()->getExtra();
+        $prefix = null;
 
-		$configValues = array(
-			'folder'       => getcwd() . DIRECTORY_SEPARATOR . 'deps',
-			'temp'         => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'wpify-scopper' . DIRECTORY_SEPARATOR . $prefix,
-			'prefix'       => $prefix,
-			'globals'      => array( 'wordpress', 'woocommerce' ),
-			'composerjson' => 'composer-deps.json',
-			'composerlock' => 'composer-deps.lock',
-		);
+        $configValues = array(
+            'folder'       => $this->path( getcwd(), 'deps' ),
+            'temp'         => $this->path( sys_get_temp_dir(), 'wpify-scopper', $prefix ),
+            'prefix'       => $prefix,
+            'globals'      => array( 'wordpress', 'woocommerce' ),
+            'composerjson' => 'composer-deps.json',
+            'composerlock' => 'composer-deps.lock',
+        );
 
-		if ( ! empty( $extra['wpify-scoper']['folder'] ) ) {
-			$configValues['folder']       = getcwd() . DIRECTORY_SEPARATOR . $extra['wpify-scoper']['folder'];
-			$configValues['composerjson'] = 'composer-' . $extra['wpify-scoper']['folder'] . '.json';
-			$configValues['composerlock'] = 'composer-' . $extra['wpify-scoper']['folder'] . '.lock';
-		}
+        if ( ! empty( $extra['wpify-scoper']['folder'] ) ) {
+            $configValues['folder']       = $this->path( getcwd(), $extra['wpify-scoper']['folder'] );
+            $configValues['composerjson'] = 'composer-' . $extra['wpify-scoper']['folder'] . '.json';
+            $configValues['composerlock'] = 'composer-' . $extra['wpify-scoper']['folder'] . '.lock';
+        }
 
-		if ( ! empty( $extra['wpify-scoper']['composerjson'] ) ) {
-			$configValues['composerjson'] = $extra['wpify-scoper']['composerjson'];
-			$configValues['composerlock'] = preg_replace( '/\.json$/', '.lock', $extra['wpify-scoper']['composerjson'] );
-		}
+        if ( ! empty( $extra['wpify-scoper']['composerjson'] ) ) {
+            $configValues['composerjson'] = $extra['wpify-scoper']['composerjson'];
+            $configValues['composerlock'] = preg_replace( '/\.json$/', '.lock', $extra['wpify-scoper']['composerjson'] );
+        }
 
-		if ( ! empty( $extra['wpify-scoper']['composerlock'] ) ) {
-			$configValues['composerlock'] = $extra['wpify-scoper']['composerlock'];
-		}
+        if ( ! empty( $extra['wpify-scoper']['composerlock'] ) ) {
+            $configValues['composerlock'] = $extra['wpify-scoper']['composerlock'];
+        }
 
-		if ( ! empty( $extra['wpify-scoper']['prefix'] ) ) {
-			$configValues['prefix'] = $extra['wpify-scoper']['prefix'];
-		}
+        if ( ! empty( $extra['wpify-scoper']['prefix'] ) ) {
+            $configValues['prefix'] = $extra['wpify-scoper']['prefix'];
+        }
 
-		if ( ! empty( $extra['wpify-scoper']['globals'] ) && is_array( $extra['wpify-scoper']['globals'] ) ) {
-			$configValues['globals'] = $extra['wpify-scoper']['globals'];
-		}
+        if ( ! empty( $extra['wpify-scoper']['globals'] ) && is_array( $extra['wpify-scoper']['globals'] ) ) {
+            $configValues['globals'] = $extra['wpify-scoper']['globals'];
+        }
 
-		if ( ! empty( $extra['wpify-scoper']['temp'] ) ) {
-			$configValues['temp'] = getcwd() . DIRECTORY_SEPARATOR . $extra['wpify-scoper']['temp'];
-		}
+        if ( ! empty( $extra['wpify-scoper']['temp'] ) ) {
+            $configValues['temp'] = $this->path( getcwd(), $extra['wpify-scoper']['temp'] );
+        }
 
-		$this->folder       = $configValues['folder'];
-		$this->prefix       = $configValues['prefix'];
-		$this->globals      = $configValues['globals'];
-		$this->tempDir      = $configValues['temp'];
-		$this->composerjson = $configValues['composerjson'];
-		$this->composerlock = $configValues['composerlock'];
-	}
+        $this->folder       = $configValues['folder'];
+        $this->prefix       = $configValues['prefix'];
+        $this->globals      = $configValues['globals'];
+        $this->tempDir      = $configValues['temp'];
+        $this->composerjson = $configValues['composerjson'];
+        $this->composerlock = $configValues['composerlock'];
+    }
 
-	public function deactivate( Composer $composer, IOInterface $io ) {
-	}
+    public function deactivate( Composer $composer, IOInterface $io ) {
+    }
 
-	public function uninstall( Composer $composer, IOInterface $io ) {
-	}
+    public function uninstall( Composer $composer, IOInterface $io ) {
+    }
 
-	public function getCapabilities() {
-		return array(
-			CommandProvider::class => self::class,
-		);
-	}
+    public function getCapabilities() {
+        return array(
+            CommandProvider::class => self::class,
+        );
+    }
 
-	public function execute( Event $event ) {
-		if ( ! empty( $this->prefix ) ) {
-			$source            = $this->tempDir . DIRECTORY_SEPARATOR . 'source';
-			$destination       = $this->tempDir . DIRECTORY_SEPARATOR . 'destination' ;
-			$destinationVendor = $destination . DIRECTORY_SEPARATOR . 'vendor';
-			$scoperConfig      = $this->createScoperConfig( $this->tempDir, $source, $destination );
+    public function path( ...$parts ) {
+        $path = join( DIRECTORY_SEPARATOR, $parts );
 
-			$commands = array(
-				'php-scoper add-prefix --output-dir=' . $destination . ' --force --config=' . $scoperConfig,
-				'composer dump-autoload --working-dir=' . $destination . ' --ignore-platform-reqs --optimize',
-				'cp "' . $source . DIRECTORY_SEPARATOR . 'composer.lock" "' . getcwd() . DIRECTORY_SEPARATOR . $this->composerlock . '"',
-				'rm -rf ' . $this->folder,
-				'mv ' . $destinationVendor . ' ' . $this->folder,
-				'rm -rf ' . $this->tempDir,
-			);
+        return str_replace( DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR, $path );
+    }
 
-			$composerJsonPath = $source . DIRECTORY_SEPARATOR . 'composer.json';
-			$composerLockPath = $source . DIRECTORY_SEPARATOR . 'composer.lock';
-			$rootcomposer     = json_decode( file_get_contents( getcwd() . DIRECTORY_SEPARATOR . 'composer.json' ), false );
+    public function execute( Event $event ) {
+        if ( ! empty( $this->prefix ) ) {
+            $source           = $this->path( $this->tempDir, 'source' );
+            $destination      = $this->path( $this->tempDir, 'destination' );
+            $scoperConfig     = $this->createScoperConfig( $this->tempDir, $source, $destination );
+            $composerJsonPath = $this->path( $source, 'composer.json' );
+            $composerLockPath = $this->path( $source, 'composer.lock' );
 
-			if ( file_exists( getcwd() . DIRECTORY_SEPARATOR . $this->composerjson ) ) {
-				$composerJson = json_decode( file_get_contents( getcwd() . DIRECTORY_SEPARATOR . $this->composerjson ), false );
-			} else {
-				$composerJson = (object) array(
-					'require' => (object) array(),
-					'scripts' => (object) array(),
-				);
-				$this->createJson( getcwd() . DIRECTORY_SEPARATOR . $this->composerjson, $composerJson );
-			}
+            if ( file_exists( $this->path( getcwd(), $this->composerjson ) ) ) {
+                $composerJson = json_decode( file_get_contents( $this->path( getcwd(), $this->composerjson ) ), false );
+            } else {
+                $composerJson = (object) array(
+                    'require' => (object) array(),
+                    'scripts' => (object) array(),
+                );
+                $this->createJson( $this->path( getcwd(), $this->composerjson ), $composerJson );
+            }
 
-			if ( empty( $composerJson->scripts ) ) {
-				$composerJson->scripts = (object) array();
-			}
+            if ( empty( $composerJson->scripts ) ) {
+                $composerJson->scripts = (object) array();
+            }
 
-			$composerJson->scripts->{$event->getName()} = $commands;
+            $postinstall     = file_get_contents( __DIR__ . '/../scripts/postinstall.php' );
+            $postinstall     = str_replace( '%%source%%', $source, $postinstall );
+            $postinstall     = str_replace( '%%destination%%', $destination, $postinstall );
+            $postinstall     = str_replace( '%%cwd%%', getcwd(), $postinstall );
+            $postinstall     = str_replace( '%%composer_lock%%', $this->composerlock, $postinstall );
+            $postinstall     = str_replace( '%%deps%%', $this->folder, $postinstall );
+            $postinstall     = str_replace( '%%temp%%', $this->tempDir, $postinstall );
+            $postinstall     = str_replace( '%%prefix%%', $this->prefix, $postinstall );
+            $postinstallPath = $this->path( $this->tempDir, 'postinstall.php' );
+            file_put_contents( $postinstallPath, $postinstall );
 
-			$this->createJson( $composerJsonPath, $composerJson );
+            $composerJson->scripts->{$event->getName()} = array(
+                'php-scoper add-prefix --output-dir=' . $destination . ' --force --config=' . $scoperConfig,
+                'composer dump-autoload --working-dir=' . $destination . ' --ignore-platform-reqs --optimize',
+                "php $postinstallPath",
+            );
 
-			if ( file_exists( getcwd() . DIRECTORY_SEPARATOR . $this->composerlock ) ) {
-				copy( getcwd() . DIRECTORY_SEPARATOR . $this->composerlock, $composerLockPath );
-			}
+            $this->createJson( $composerJsonPath, $composerJson );
 
-			$command = $event->getName() === ScriptEvents::POST_UPDATE_CMD
-				? 'update'
-				: 'install';
+            if ( file_exists( $this->path( getcwd(), $this->composerlock ) ) ) {
+                copy( $this->path( getcwd(), $this->composerlock ), $composerLockPath );
+            }
 
-			$this->runInstall( $source, $command );
+            $command = $event->getName() === ScriptEvents::POST_UPDATE_CMD
+                ? 'update'
+                : 'install';
 
-			if ( file_exists( $composerLockPath ) ) {
-				copy( $composerLockPath, getcwd() . DIRECTORY_SEPARATOR . $this->composerlock );
-			}
-		}
-	}
+            $this->runInstall( $source, $command );
+        }
+    }
 
-	private function createScoperConfig( string $path, string $source, string $destination ) {
-		$inc_path    = $this->createPath( array( __DIR__, '..', 'config', 'scoper.inc.php' ) );
-		$config_path = $this->createPath( array( __DIR__, '..', 'config', 'scoper.config.php' ) );
-		$custom_path = $this->createPath( array( getcwd(), 'scoper.custom.php' ) );
-		$final_path  = $path . DIRECTORY_SEPARATOR . 'scoper.inc.php';
-		$symbols_dir = realpath( __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'symbols' );
+    private function createScoperConfig( string $path, string $source, string $destination ) {
+        $inc_path    = $this->createPath( array( __DIR__, '..', 'config', 'scoper.inc.php' ) );
+        $config_path = $this->createPath( array( __DIR__, '..', 'config', 'scoper.config.php' ) );
+        $custom_path = $this->createPath( array( getcwd(), 'scoper.custom.php' ) );
+        $final_path  = $this->path( $path, 'scoper.inc.php' );
+        $symbols_dir = realpath( $this->path( __DIR__, '..', 'symbols' ) );
 
-		$this->createFolder( $path );
-		$this->createFolder( $source );
-		$this->createFolder( $destination );
+        $this->createFolder( $path );
+        $this->createFolder( $source );
+        $this->createFolder( $destination );
 
-		$config = require_once $config_path;
+        $config = require_once $config_path;
 
-		if ( ! is_array( $config ) ) {
-			exit;
-		}
+        if ( ! is_array( $config ) ) {
+            exit;
+        }
 
-		$config['prefix']      = $this->prefix;
-		$config['source']      = $source;
-		$config['destination'] = $destination;
-		$config['whitelist']   = array( 'NULL', 'TRUE', 'FALSE' );
+        $config['prefix']      = $this->prefix;
+        $config['source']      = $source;
+        $config['destination'] = $destination;
+        $config['whitelist']   = array( 'NULL', 'TRUE', 'FALSE' );
 
-		if ( in_array( 'wordpress', $this->globals ) ) {
-			$config['whitelist'] = array_merge_recursive(
-				$config['whitelist'],
-				require $symbols_dir . DIRECTORY_SEPARATOR . 'wordpress.php'
-			);
-		}
+        if ( in_array( 'wordpress', $this->globals ) ) {
+            $config['whitelist'] = array_merge_recursive(
+                $config['whitelist'],
+                require $this->path( $symbols_dir, 'wordpress.php' )
+            );
+        }
 
-		if ( in_array( 'woocommerce', $this->globals ) ) {
-			$config['whitelist'] = array_merge_recursive(
-				$config['whitelist'],
-				require $symbols_dir . DIRECTORY_SEPARATOR . 'woocommerce.php'
-			);
-		}
+        if ( in_array( 'woocommerce', $this->globals ) ) {
+            $config['whitelist'] = array_merge_recursive(
+                $config['whitelist'],
+                require $this->path( $symbols_dir, 'woocommerce.php' )
+            );
+        }
 
-		if ( in_array( 'plugin-update-checker', $this->globals ) ) {
-			$config['whitelist'] = array_merge_recursive(
-				$config['whitelist'],
-				require $symbols_dir . DIRECTORY_SEPARATOR . 'plugin-update-checker.php'
-			);
-		}
+        if ( in_array( 'plugin-update-checker', $this->globals ) ) {
+            $config['whitelist'] = array_merge_recursive(
+                $config['whitelist'],
+                require $this->path( $symbols_dir, 'plugin-update-checker.php' )
+            );
+        }
 
-		if ( file_exists( $custom_path ) ) {
-			copy( $custom_path, $path . DIRECTORY_SEPARATOR . 'scoper.custom.php' );
-		}
+        if ( file_exists( $custom_path ) ) {
+            copy( $custom_path, $this->path( $path, 'scoper.custom.php' ) );
+        }
 
-		copy( $inc_path, $path . DIRECTORY_SEPARATOR . 'scoper.inc.php' );
-		file_put_contents( $path . DIRECTORY_SEPARATOR . 'scoper.config.php', '<?php return ' . var_export( $config, true ) . ';' );
+        copy( $inc_path, $this->path( $path, 'scoper.inc.php' ) );
+        file_put_contents( $this->path( $path, 'scoper.config.php' ), '<?php return ' . var_export( $config, true ) . ';' );
 
-		return $final_path;
-	}
+        return $final_path;
+    }
 
-	private function createPath( array $parts ) {
-		return realpath( DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts ) );
-	}
+    private function createPath( array $parts ) {
+        return realpath( DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts ) );
+    }
 
-	private function createFolder( string $path ) {
-		if ( ! file_exists( $path ) ) {
-			mkdir( $path, 0755, true );
-		}
-	}
+    private function createFolder( string $path ) {
+        if ( ! file_exists( $path ) ) {
+            mkdir( $path, 0755, true );
+        }
+    }
 
-	private function createJson( string $path, $content ) {
-		$this->createFolder( dirname( $path ) );
-		$json = json_encode( $content, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-		file_put_contents( $path, $json );
-	}
+    private function createJson( string $path, $content ) {
+        $this->createFolder( dirname( $path ) );
+        $json = json_encode( $content, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+        file_put_contents( $path, $json );
+    }
 
-	private function runInstall( string $path, string $command = 'install' ) {
-		$output      = new ConsoleOutput();
-		$application = new Application();
+    private function runInstall( string $path, string $command = 'install' ) {
+        $output      = new ConsoleOutput();
+        $application = new Application();
 
-		return $application->run( new ArrayInput( array(
-			'command'                => $command,
-			'--working-dir'          => $path,
-			'--ignore-platform-reqs' => true,
-			'--optimize-autoloader'  => true,
-		) ), $output );
-	}
+        return $application->run( new ArrayInput( array(
+            'command'                => $command,
+            '--working-dir'          => $path,
+            '--ignore-platform-reqs' => true,
+            '--optimize-autoloader'  => true,
+        ) ), $output );
+    }
 }
