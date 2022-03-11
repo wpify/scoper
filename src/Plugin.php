@@ -45,11 +45,9 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
     public function activate( Composer $composer, IOInterface $io ) {
         $this->composer = $composer;
         $this->io       = $io;
-
-        $extra  = $composer->getPackage()->getExtra();
-        $prefix = null;
-
-        $configValues = array(
+        $extra          = $composer->getPackage()->getExtra();
+        $prefix         = null;
+        $configValues   = array(
             'folder'       => $this->path( getcwd(), 'deps' ),
             'temp'         => $this->path( getcwd(), 'tmp-' . substr( str_shuffle( md5( microtime() ) ), 0, 10 ), $prefix ),
             'prefix'       => $prefix,
