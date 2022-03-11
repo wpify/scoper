@@ -51,7 +51,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
         $configValues = array(
             'folder'       => $this->path( getcwd(), 'deps' ),
-            'temp'         => $this->path( sys_get_temp_dir(), 'wpify-scopper', $prefix ),
+            'temp'         => $this->path( getcwd(), 'tmp-' . substr( str_shuffle( md5( microtime() ) ), 0, 10 ), $prefix ),
             'prefix'       => $prefix,
             'globals'      => array( 'wordpress', 'woocommerce' ),
             'composerjson' => 'composer-deps.json',
