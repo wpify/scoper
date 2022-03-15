@@ -48,7 +48,7 @@ file_put_contents( $autoload_static_path, $autoload_static );
 // copy composer.lock
 
 remove( path( $cwd, $composer_lock ) );
-copy( path( $cwd, 'composer.lock' ), path( $cwd, $composer_lock ) );
+copy( path( $destination, 'composer.lock' ), path( $cwd, $composer_lock ) );
 
 // copy deps folder
 
