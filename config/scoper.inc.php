@@ -48,6 +48,11 @@ return customize_php_scoper_config( array(
 				$content = str_replace( "namespace $prefix;", "namespace $prefix;\n\nuse WP_Error;", $content );
 			}
 
+			if ( strpos( $filePath, 'twig/src/Node/ModuleNode.php' ) !== false ) {
+				$content = str_replace( 'write("use Twig', 'write("use ' . $prefix . '\\\\Twig', $content );
+				$content = str_replace( 'Template;\\n\\n', 'Template;\\n\\n use function ' . $prefix . '\\\\twig_escape_filter; \\n\\n', $content );
+			}
+
 			usort( $whitelist, function ( $a, $b ) {
 				return strlen( $b ) - strlen( $a );
 			} );
