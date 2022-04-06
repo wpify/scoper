@@ -49,7 +49,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
         $prefix         = null;
         $configValues   = array(
             'folder'       => $this->path( getcwd(), 'deps' ),
-            'temp'         => $this->path( getcwd(), 'tmp-' . substr( str_shuffle( md5( microtime() ) ), 0, 10 ), $prefix ),
+            'temp'         => $this->path( getcwd(), 'tmp-' . substr( str_shuffle( md5( microtime() ) ), 0, 10 ) ),
             'prefix'       => $prefix,
             'globals'      => array( 'wordpress', 'woocommerce' ),
             'composerjson' => 'composer-deps.json',
