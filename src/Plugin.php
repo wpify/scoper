@@ -163,11 +163,11 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
     }
 
     private function createScoperConfig( string $path, string $source, string $destination ) {
-        $inc_path    = $this->createPath( array( __DIR__, '..', 'config', 'scoper.inc.php' ) );
-        $config_path = $this->createPath( array( __DIR__, '..', 'config', 'scoper.config.php' ) );
-        $custom_path = $this->createPath( array( getcwd(), 'scoper.custom.php' ) );
+        $inc_path    = $this->createPath( array( 'config', 'scoper.inc.php' ) );
+        $config_path = $this->createPath( array( 'config', 'scoper.config.php' ) );
+        $custom_path = $this->createPath( array( 'scoper.custom.php' ) );
         $final_path  = $this->path( $path, 'scoper.inc.php' );
-        $symbols_dir = realpath( $this->path( __DIR__, '..', 'symbols' ) );
+        $symbols_dir = $this->createPath( ['symbols'] );
 
         $this->createFolder( $path );
         $this->createFolder( $source );
@@ -216,7 +216,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
     }
 
     private function createPath( array $parts ) {
-        return realpath( DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts ) );
+        return dirname( __DIR__ ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
     }
 
     private function createFolder( string $path ) {
