@@ -33,7 +33,7 @@
   "require-dev": {
     "composer/composer": "^2.2",
     "johnpbloch/wordpress": "^5.9",
-    "wpackagist-plugin/woocommerce": "^6.2",
+    "wpackagist-plugin/woocommerce": "^6.3",
     "nikic/php-parser": "^4.13",
     "yahnis-elsts/plugin-update-checker": "^4.11"
   },

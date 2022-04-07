@@ -12,7 +12,6 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 
 ## Requirements
 
-* MacOS or Linux operating system (MS Windows is not supported)
 * PHP 7.4+
 
 ## Usage
