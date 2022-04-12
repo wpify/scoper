@@ -165,7 +165,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
     private function createScoperConfig( string $path, string $source, string $destination ) {
         $inc_path    = $this->createPath( array( 'config', 'scoper.inc.php' ) );
         $config_path = $this->createPath( array( 'config', 'scoper.config.php' ) );
-        $custom_path = $this->createPath( array( 'scoper.custom.php' ) );
+        $custom_path = $this->createPath( array( 'scoper.custom.php' ), true );
         $final_path  = $this->path( $path, 'scoper.inc.php' );
         $symbols_dir = $this->createPath( ['symbols'] );
 
@@ -215,8 +215,14 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
         return $final_path;
     }
 
-    private function createPath( array $parts ) {
-        return dirname( __DIR__ ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
+    private function createPath( array $parts, bool $in_root = false ) {
+		$vendor = strpos( dirname( __DIR__ ), 'vendor' . DIRECTORY_SEPARATOR . 'wpify' . DIRECTORY_SEPARATOR . 'scoper' );
+
+    	if ( ! $in_root || ! is_int( $vendor ) ) {
+			return dirname( __DIR__ ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
+		}
+
+    	return substr( dirname( __DIR__ ), 0, $vendor - 1 ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
     }
 
     private function createFolder( string $path ) {
