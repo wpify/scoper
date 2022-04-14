@@ -143,9 +143,9 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
             file_put_contents( $postinstallPath, $postinstall );
 
             $composerJson->scripts->{$event->getName()} = array(
-                'php-scoper add-prefix --output-dir=' . $destination . ' --force --config=' . $scoperConfig,
-                'composer dump-autoload --working-dir=' . $destination . ' --ignore-platform-reqs --optimize',
-                "php $postinstallPath",
+                'php-scoper add-prefix --output-dir="' . $destination . '" --force --config="' . $scoperConfig . '"',
+                'composer dump-autoload --working-dir="' . $destination . '" --ignore-platform-reqs --optimize',
+                'php "' . $postinstallPath . '"',
             );
 
             $this->createJson( $composerJsonPath, $composerJson );
@@ -219,8 +219,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$vendor = strpos( dirname( __DIR__ ), 'vendor' . DIRECTORY_SEPARATOR . 'wpify' . DIRECTORY_SEPARATOR . 'scoper' );
 
     	if ( ! $in_root || ! is_int( $vendor ) ) {
-			return dirname( __DIR__ ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
-		}
+        return dirname( __DIR__ ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
+    }
 
     	return substr( dirname( __DIR__ ), 0, $vendor - 1 ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
     }
