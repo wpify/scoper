@@ -216,13 +216,13 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
     }
 
     private function createPath( array $parts, bool $in_root = false ) {
-		$vendor = strpos( dirname( __DIR__ ), 'vendor' . DIRECTORY_SEPARATOR . 'wpify' . DIRECTORY_SEPARATOR . 'scoper' );
+        $vendor = strpos( dirname( __DIR__ ), 'vendor' . DIRECTORY_SEPARATOR . 'wpify' . DIRECTORY_SEPARATOR . 'scoper' );
 
-    	if ( ! $in_root || ! is_int( $vendor ) ) {
-        return dirname( __DIR__ ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
-    }
+        if ( ! $in_root || ! is_int( $vendor ) ) {
+            return dirname( __DIR__ ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
+        }
 
-    	return substr( dirname( __DIR__ ), 0, $vendor - 1 ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
+        return getcwd() . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
     }
 
     private function createFolder( string $path ) {
