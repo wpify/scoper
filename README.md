@@ -12,7 +12,7 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 
 ## Requirements
 
-* PHP 7.4+
+* PHP 8.0+
 
 ## Usage
 

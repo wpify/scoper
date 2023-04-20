@@ -26,16 +26,16 @@
   ],
   "require": {
     "composer-plugin-api": "^2.1",
-    "humbug/php-scoper": "0.17.2",
-    "jetbrains/phpstorm-stubs": "^2021.3",
-    "woocommerce/action-scheduler": "^3.4"
+    "humbug/php-scoper": "0.18.3",
+    "jetbrains/phpstorm-stubs": "^v2022.3",
+    "woocommerce/action-scheduler": "^3.5.4"
   },
   "require-dev": {
-    "composer/composer": "^2.2",
-    "johnpbloch/wordpress": "^5.9",
-    "wpackagist-plugin/woocommerce": "^6.3",
-    "nikic/php-parser": "^4.13",
-    "yahnis-elsts/plugin-update-checker": "^4.11"
+    "composer/composer": "^2.5.5",
+    "johnpbloch/wordpress": "^6.2.0",
+    "wpackagist-plugin/woocommerce": "^7.6.0",
+    "nikic/php-parser": "^v4.15.4",
+    "yahnis-elsts/plugin-update-checker": "^v4.13"
   },
   "extra": {
     "class": "Wpify\\Scoper\\Plugin",
@@ -50,6 +50,12 @@
     },
     "textdomain": {
       "wpify-custom-fields": "some-new-textdomain"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true,
+      "johnpbloch/wordpress-core-installer": true
     }
   }
 }
