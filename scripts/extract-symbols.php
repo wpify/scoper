@@ -6,7 +6,7 @@ use PhpParser\ParserFactory;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-function getParser() {
+function get_parser() {
 	static $parser;
 
 	if ( empty( $parser ) ) {
@@ -19,59 +19,57 @@ function getParser() {
 function resolve( Node $node ) {
 	if ( $node instanceof Node\Stmt\Namespace_ ) {
 		$namespace = join( '\\', $node->name->parts );
-		$symbols   = array();
 
-		foreach ( $node->stmts as $subnode ) {
-			foreach ( resolve( $subnode ) as $result ) {
-				$symbols[] = $namespace . '\\' . $result;
-			}
-		}
-
-		return $symbols;
+		return array( 'expose-namespaces' => $namespace );
 	} elseif ( $node instanceof Node\Stmt\Class_ ) {
-		return array( $node->name->name );
+		return array( 'expose-classes' => array( $node->name->name ) );
 	} elseif ( $node instanceof Node\Stmt\Function_ ) {
-		return array( $node->name->name );
+		return array( 'expose-functions' => array( $node->name->name ) );
 	} elseif ( $node instanceof Node\Stmt\If_ ) {
 		$symbols = array();
 
 		foreach ( $node->stmts as $subnode ) {
-			foreach ( resolve( $subnode ) as $result ) {
-				$symbols[] = $result;
+			foreach ( resolve( $subnode ) as $key => $result ) {
+				$symbols[ $key ] = array_merge( $symbols[ $key ] ?? array(), $result );
 			}
 		}
 
 		return $symbols;
 	} elseif ( $node instanceof Node\Stmt\Trait_ ) {
-		return array( $node->name->name );
+		return array( 'expose-classes' => array( $node->name->name ) );
 	} elseif ( $node instanceof Node\Stmt\Interface_ ) {
-		return array( $node->name->name );
+		return array( 'expose-classes' => array( $node->name->name ) );
 	} elseif (
 		$node instanceof Node\Stmt\Expression
 		&& $node->expr instanceof Node\Expr\FuncCall
 		&& in_array( 'define', $node->expr->name->parts )
 	) {
-		return array( $node->expr->args[0]->value->value );
+		return array( 'expose-constants' => array( $node->expr->args[0]->value->value ) );
 	}
 
 	return array();
 }
 
-function getFiles( string $folder ) {
-	$files = array();
+function get_files( string $folder ) {
+	$files  = array();
+	$folder = realpath( $folder );
 
 	if ( file_exists( $folder ) ) {
-		$found = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $folder ), RecursiveIteratorIterator::SELF_FIRST );
+		$found = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $folder ),
+			RecursiveIteratorIterator::SELF_FIRST
+		);
 
 		foreach ( $found as $file ) {
-			$normalizedPath = realpath( str_replace( realpath( __DIR__ . '/../sources/' ), '', $file ) );
+			$real_path       = $file->getRealPath();
+			$normalized_path = str_replace( realpath( __DIR__ . '/../sources' ) . '/', '', $real_path );
 
-			if ( preg_match( "/\/vendor\//i", $normalizedPath ) || preg_match( "/\/wp-content\//i", $normalizedPath ) ) {
+			if ( preg_match( "/\/vendor\//i", $normalized_path ) || preg_match( "/\/wp-content\//i", $normalized_path ) ) {
 				continue;
 			}
 
-			if ( preg_match( "/\.php$/i", $normalizedPath ) ) {
-				$files[] = $normalizedPath;
+			if ( preg_match( "/\.php$/i", $real_path ) ) {
+				$files[] = $real_path;
 			}
 		}
 	}
@@ -79,36 +77,39 @@ function getFiles( string $folder ) {
 	return $files;
 }
 
-function extractSymbols( string $where, string $result ) {
-	$files   = getFiles( $where );
+function extract_symbols( string $where, string $result ) {
+	$files   = get_files( $where );
 	$symbols = array();
 
 	foreach ( $files as $file ) {
 		try {
-			$ast = getParser()->parse( file_get_contents( $file ) );
+			$ast = get_parser()->parse( file_get_contents( $file ) );
 
 			foreach ( $ast as $node ) {
-				$symbols = array_merge( $symbols, resolve( $node ) );
+				$symbols = array_merge_recursive( $symbols, resolve( $node ) );
 			}
 		} catch ( Error $error ) {
 			echo "Parse error: {$error->getMessage()} in {$file}\n";
 		}
 	}
 
-	$symbols = array_unique( $symbols );
+	$count = 0;
+
+	foreach ( $symbols as $exclusion => $values ) {
+		$symbols[ $exclusion ] = array_unique( $values );
+		$count                 += count( $values );
+	}
 
 	$content = join( array(
-		"<?php return array('",
-		join( '\',\'', array_map( 'addslashes', $symbols ) ),
-		"');",
+		"<?php return " . var_export( $symbols, true ) . ';',
 	) );
 
 	file_put_contents( $result, $content );
 
-	echo ">>> " . count( $symbols ) . " symbols exported to " . $result . "\n";
+	echo ">>> " . $count . " symbols exported to " . $result . "\n";
 }
 
-extractSymbols( __DIR__ . '/../sources/wordpress', realpath( __DIR__ . '/../symbols' ) . '/wordpress.php' );
-extractSymbols( __DIR__ . '/../sources/plugin-woocommerce', realpath( __DIR__ . '/../symbols' ) . '/woocommerce.php' );
-//extractSymbols( __DIR__ . '/../vendor/yahnis-elsts/plugin-update-checker', realpath( __DIR__ . '/../symbols' ) . '/plugin-update-checker.php' );
-extractSymbols( __DIR__ . '/../sources/plugin-action-scheduler/', realpath( __DIR__ . '/../symbols' ) . '/action-scheduler.php' );
+extract_symbols( __DIR__ . '/../sources/wordpress', realpath( __DIR__ . '/../symbols' ) . '/wordpress.php' );
+extract_symbols( __DIR__ . '/../sources/plugin-woocommerce', realpath( __DIR__ . '/../symbols' ) . '/woocommerce.php' );
+// extract_symbols( __DIR__ . '/../vendor/yahnis-elsts/plugin-update-checker', realpath( __DIR__ . '/../symbols' ) . '/plugin-update-checker.php' );
+extract_symbols( __DIR__ . '/../sources/plugin-action-scheduler/', realpath( __DIR__ . '/../symbols' ) . '/action-scheduler.php' );

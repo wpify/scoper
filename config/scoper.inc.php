@@ -17,7 +17,6 @@ if ( ! function_exists( 'customize_php_scoper_config' ) ) {
 }
 
 $prefix      = $config['prefix'];
-$whitelist   = $config['whitelist'];
 $source      = $config['source'];
 $destination = $config['destination'];
 
@@ -35,7 +34,7 @@ return customize_php_scoper_config( array(
 		      ) ),
 	),
 	'patchers'                   => array(
-		function ( string $filePath, string $prefix, string $content ) use ( $whitelist ): string {
+		function ( string $filePath, string $prefix, string $content ) use ( $config ): string {
 			if ( strpos( $filePath, 'guzzlehttp/guzzle/src/Handler/CurlFactory.php' ) !== false ) {
 				$content = str_replace( 'stream_for($sink)', 'Utils::streamFor()', $content );
 			}
@@ -53,7 +52,7 @@ return customize_php_scoper_config( array(
 				$content = str_replace( 'Template;\\n\\n', 'Template;\\n\\n use function ' . $prefix . '\\\\twig_escape_filter; \\n\\n', $content );
 			}
 
-			usort( $whitelist, function ( $a, $b ) {
+			usort( $config['expose-classes'], function ( $a, $b ) {
 				return strlen( $b ) - strlen( $a );
 			} );
 
@@ -61,7 +60,7 @@ return customize_php_scoper_config( array(
 			$searches     = array();
 			$replacements = array();
 
-			foreach ( $whitelist as $symbol ) {
+			foreach ( $config['expose-classes'] as $symbol ) {
 				$searches[]     = "\\$prefix\\$symbol";
 				$replacements[] = "\\$symbol";
 
@@ -74,7 +73,6 @@ return customize_php_scoper_config( array(
 			return $content;
 		},
 	),
-	'whitelist'                  => array(),
 	'expose-global-constants' => false,
 	'expose-global-classes'   => false,
 	'expose-global-functions' => false,
