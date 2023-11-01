@@ -12,7 +12,7 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 
 ## Requirements
 
-* PHP 8.0+
+* PHP >= 8.0
 
 ## Usage
 
@@ -96,7 +96,7 @@ composer:
   before_script:
     - PATH=$(composer global config bin-dir --absolute --quiet):$PATH
     - composer config -g cache-dir "$(pwd)/.composer-cache"
-    - composer global require wpify/scoper:^2
+    - composer global require wpify/scoper:^3
   script:
     - composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 ```

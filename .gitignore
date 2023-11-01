@@ -2,3 +2,4 @@
 /.idea/
 /sources/
 /vendor/
+/composer.lock
