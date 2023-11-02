@@ -25,8 +25,9 @@
     }
   ],
   "require": {
+    "php": "^7.4 || ^8.0",
     "composer-plugin-api": "^2.3",
-    "wpify/php-scoper": "^0.18",
+    "wpify/php-scoper": "^0.16",
     "jetbrains/phpstorm-stubs": "^v2023.2",
     "woocommerce/action-scheduler": "^3.6"
   },
