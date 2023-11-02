@@ -25,6 +25,7 @@
     }
   ],
   "require": {
+    "php": "^8.1",
     "composer-plugin-api": "^2.3",
     "wpify/php-scoper": "^0.18",
     "jetbrains/phpstorm-stubs": "^v2023.2",
