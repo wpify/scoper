@@ -13,9 +13,9 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 ## Requirements
 
 * wpify/scoper:**3.1**
-  * PHP 7.4 || 8.0
+    * PHP 7.4 || 8.0
 * wpify/scoper:**3.2**
-  * PHP >= 8.1
+    * PHP >= 8.1
 
 ## Usage
 
@@ -101,7 +101,7 @@ composer:
   script:
     - PATH=$(composer global config bin-dir --absolute --quiet):$PATH
     - composer global config --no-plugins allow-plugins.wpify/scoper true
-    - composer global require wpify/scoper --update-no-dev
+    - composer global require wpify/scoper
     - composer install --prefer-dist --optimize-autoloader --no-ansi --no-interaction --no-dev
 ```
 
