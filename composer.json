@@ -26,15 +26,15 @@
   ],
   "require": {
     "composer-plugin-api": "^2.3",
-    "wpify/php-scoper": "^0.18",
-    "jetbrains/phpstorm-stubs": "^v2023.2",
-    "woocommerce/action-scheduler": "^3.6"
+    "wpify/php-scoper": "^0.18"
   },
   "require-dev": {
     "composer/composer": "^2.6",
+    "jetbrains/phpstorm-stubs": "^v2023.2",
     "johnpbloch/wordpress": "^6.3",
-    "wpackagist-plugin/woocommerce": "^8.2",
     "nikic/php-parser": "^v4.17",
+    "woocommerce/action-scheduler": "^3.6",
+    "wpackagist-plugin/woocommerce": "^8.2",
     "yahnis-elsts/plugin-update-checker": "^v5.2"
   },
   "extra": {

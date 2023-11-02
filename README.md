@@ -101,7 +101,7 @@ composer:
   script:
     - PATH=$(composer global config bin-dir --absolute --quiet):$PATH
     - composer global config --no-plugins allow-plugins.wpify/scoper true
-    - composer global require wpify/scoper
+    - composer global require wpify/scoper --update-no-dev
     - composer install --prefer-dist --optimize-autoloader --no-ansi --no-interaction --no-dev
 ```
 
