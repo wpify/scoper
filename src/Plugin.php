@@ -144,7 +144,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
 			$composerJson->scripts->{$event->getName()} = array(
 				'php-scoper.phar add-prefix --output-dir="' . $destination . '" --force --config="' . $scoperConfig . '"',
-				'composer dump-autoload --working-dir="' . $destination . '" --ignore-platform-reqs --optimize',
+				'composer dump-autoload --working-dir="' . $destination . '" --optimize',
 				'php "' . $postinstallPath . '"',
 			);
 
