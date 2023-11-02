@@ -12,24 +12,32 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 
 ## Requirements
 
-* PHP >= 8.0
+* wpify/scoper:**3.1**
+  * PHP 7.4 || 8.0
+* wpify/scoper:**3.2**
+  * PHP >= 8.1
 
 ## Usage
 
 1. The configuration requires creating `composer-deps.json` file, that has exactly same structure like `composer.json`
    file, but serves only for scoped dependencies. Dependencies that you don't want to scope comes to `composer.json`.
-
 2. Add `extra.wpify-scoper.prefix` to you `composer.json`, where you can specify the namespace, where your dependencies
    will be in. All other config options (`folder`, `globals`, `composerjson`, `composerlock`) are optional.
-
 3. The easiest way how to use the scoper on development environment is to install WPify Scoper as a dev dependency.
    After each `composer install` or `composer update`, all the dependencies specified in `composer-deps.json` will be
    scoped for you.
+4. Add a `config.platform` option in your composer.json and composer-deps.json. This settings will make sure that the
+   dependencies will be installed with the correct PHP version.
 
-**Example of `composer.json` with it's default values**
+**Example of `composer.json` with its default values**
 
 ```json
 {
+  "config": {
+    "platform": {
+      "php": "8.0"
+    }
+  },
   "require-dev": {
     "wpify/scoper": "^2.4",
     "example/dependency": "^1.0"
@@ -83,22 +91,18 @@ To use WPify Scoper with Gitlab CI, you can add the following job to your `.gitl
 
 ```yaml
 composer:
-  stage: build
+  stage: .pre
   image: composer:2
-  cache:
-    paths:
-      - .composer-cache/
   artifacts:
     paths:
-      - ./vendor
-      - ./deps
+      - $CI_PROJECT_DIR/deps
+      - $CI_PROJECT_DIR/vendor
     expire_in: 1 week
-  before_script:
-    - PATH=$(composer global config bin-dir --absolute --quiet):$PATH
-    - composer config -g cache-dir "$(pwd)/.composer-cache"
-    - composer global require wpify/scoper:^3
   script:
-    - composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+    - PATH=$(composer global config bin-dir --absolute --quiet):$PATH
+    - composer global config --no-plugins allow-plugins.wpify/scoper true
+    - composer global require wpify/scoper
+    - composer install --prefer-dist --optimize-autoloader --no-ansi --no-interaction --no-dev
 ```
 
 ### Deployment with Github Actions
