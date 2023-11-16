@@ -14,6 +14,10 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
 class Plugin implements PluginInterface, EventSubscriberInterface {
+
+	public const SCOPER_INSTALL_CMD = 'scoper-install-cmd';
+	public const SCOPER_UPDATE_CMD = 'scoper-update-cmd';
+
 	protected $composer;
 	protected $io;
 
@@ -110,6 +114,15 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	}
 
 	public function execute( Event $event ) {
+		$extra = $event->getComposer()->getPackage()->getExtra();
+		if (
+			isset( $extra['wpify-scoper']['autorun'] ) &&
+			$extra['wpify-scoper']['autorun'] === false &&
+			( $event->getName() === ScriptEvents::POST_UPDATE_CMD || $event->getName() === ScriptEvents::POST_INSTALL_CMD )
+		) {
+			return;
+		}
+
 		if ( ! empty( $this->prefix ) ) {
 			$source           = $this->path( $this->tempDir, 'source' );
 			$destination      = $this->path( $this->tempDir, 'destination' );
@@ -142,7 +155,15 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$postinstallPath = $this->path( $this->tempDir, 'postinstall.php' );
 			file_put_contents( $postinstallPath, $postinstall );
 
-			$composerJson->scripts->{$event->getName()} = array(
+			$scriptName = $event->getName();
+			if ( $event->getName() === self::SCOPER_UPDATE_CMD ) {
+				$scriptName = ScriptEvents::POST_UPDATE_CMD;
+			}
+			if ( $event->getName() === self::SCOPER_INSTALL_CMD ) {
+				$scriptName = ScriptEvents::POST_INSTALL_CMD;
+			}
+
+			$composerJson->scripts->{$scriptName} = array(
 				'php-scoper.phar add-prefix --output-dir="' . $destination . '" --force --config="' . $scoperConfig . '"',
 				'composer dump-autoload --working-dir="' . $destination . '" --ignore-platform-reqs --optimize',
 				'php "' . $postinstallPath . '"',
@@ -154,9 +175,13 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 				copy( $this->path( getcwd(), $this->composerlock ), $composerLockPath );
 			}
 
-			$command = $event->getName() === ScriptEvents::POST_UPDATE_CMD
-				? 'update'
-				: 'install';
+			$command = 'install';
+			if (
+				$event->getName() === ScriptEvents::POST_UPDATE_CMD ||
+				$event->getName() === self::SCOPER_UPDATE_CMD
+			) {
+				$command = 'update';
+			}
 
 			$this->runInstall( $source, $command );
 		}
