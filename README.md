@@ -22,7 +22,9 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 1. The configuration requires creating `composer-deps.json` file, that has exactly same structure like `composer.json`
    file, but serves only for scoped dependencies. Dependencies that you don't want to scope comes to `composer.json`.
 2. Add `extra.wpify-scoper.prefix` to you `composer.json`, where you can specify the namespace, where your dependencies
-   will be in. All other config options (`folder`, `globals`, `composerjson`, `composerlock`) are optional.
+   will be in. All other config options (`folder`, `globals`, `composerjson`, `composerlock`, `autorun`) are optional.
+   Option `autorun` defaults to `true` so that scoping is run automatically upon composer `update` or `install` command.
+   That is not what you want in all cases, so you can set it `false` if you need. 
 3. The easiest way how to use the scoper on development environment is to install WPify Scoper as a dev dependency.
    After each `composer install` or `composer update`, all the dependencies specified in `composer-deps.json` will be
    scoped for you.
@@ -51,7 +53,8 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
         "woocommerce"
       ],
       "composerjson": "composer-deps.json",
-      "composerlock": "composer-deps.lock"
+      "composerlock": "composer-deps.lock",
+      "autorun": true
     }
   }
 }
