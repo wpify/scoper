@@ -1,0 +1,38 @@
+#!/usr/bin/env php
+<?php
+
+use Composer\Factory;
+use Composer\IO\NullIO;
+use Composer\Script\Event;
+use Wpify\Scoper\Plugin;
+
+$vendorRoot = __DIR__ . '/../../..';
+require_once $vendorRoot . '/autoload.php';
+
+$command = null;
+if ( isset( $argv[1] ) && $argv[1] === 'install' ) {
+	$command = Plugin::SCOPER_INSTALL_CMD;
+}
+if ( isset( $argv[1] ) && $argv[1] === 'update' ) {
+	$command = Plugin::SCOPER_UPDATE_CMD;
+}
+if ( $command === null ) {
+	echo 'Usage: wpify-scoper [command]' . PHP_EOL;
+	echo '  commands:' . PHP_EOL;
+	echo '    update' . PHP_EOL;
+	echo '    install' . PHP_EOL . PHP_EOL;
+	exit;
+}
+
+$factory    = new Factory();
+$ioInterace = new NullIO();
+$composer   = $factory->createComposer( $ioInterace );
+$fakeEvent  = new Event(
+	$command,
+	$composer,
+	$ioInterace
+);
+
+$scoper = new Plugin();
+$scoper->activate( $composer, $ioInterace );
+$scoper->execute( $fakeEvent );
