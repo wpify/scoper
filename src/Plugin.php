@@ -271,7 +271,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		return $application->run( new ArrayInput( array(
 			'command'                => $command,
 			'--working-dir'          => $path,
-			'--ignore-platform-reqs' => true,
 			'--optimize-autoloader'  => true,
 		) ), $output );
 	}
