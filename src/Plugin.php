@@ -167,7 +167,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
 			$composerJson->scripts->{$scriptName} = array(
 				$phpscoper . ' add-prefix --output-dir="' . $destination . '" --force --config="' . $scoperConfig . '"',
-				'composer dump-autoload --working-dir="' . $destination . '" --ignore-platform-reqs --optimize',
+				'composer dump-autoload --working-dir="' . $destination . '" --optimize',
 				'php "' . $postinstallPath . '"',
 			);
 
@@ -271,7 +271,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		return $application->run( new ArrayInput( array(
 			'command'                => $command,
 			'--working-dir'          => $path,
-			'--ignore-platform-reqs' => true,
 			'--optimize-autoloader'  => true,
 		) ), $output );
 	}
