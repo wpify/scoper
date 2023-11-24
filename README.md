@@ -119,15 +119,13 @@ jobs:
       - name: Install composer
         uses: php-actions/composer@v6
         with:
-          php_version: 8.0
           php_extensions: json
           version: 2
-
-      - name: Remove dev dependencies
-        run: |
-          composer global config --no-plugins allow-plugins.wpify/scoper true
-          composer global install wpify/scoper
-          composer install --prefer-dist --optimize-autoloader --no-ansi --no-interaction --no-dev
+          dev: no
+      - run: composer global config --no-plugins allow-plugins.wpify/scoper true
+      - run: composer global require wpify/scoper
+      - run: sudo chown -R $USER:$USER $GITHUB_WORKSPACE/vendor
+      - run: composer install --no-dev --optimize-autoloader
 
       - name: Archive plugin artifacts
         uses: actions/upload-artifact@v2
