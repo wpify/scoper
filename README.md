@@ -19,16 +19,17 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 
 ## Usage
 
-1. The configuration requires creating `composer-deps.json` file, that has exactly same structure like `composer.json`
+1. This composer plugin is meant to be installed globally, but you can also require it as a dev dependency.
+2. The configuration requires creating `composer-deps.json` file, that has exactly same structure like `composer.json`
    file, but serves only for scoped dependencies. Dependencies that you don't want to scope comes to `composer.json`.
-2. Add `extra.wpify-scoper.prefix` to you `composer.json`, where you can specify the namespace, where your dependencies
+3. Add `extra.wpify-scoper.prefix` to you `composer.json`, where you can specify the namespace, where your dependencies
    will be in. All other config options (`folder`, `globals`, `composerjson`, `composerlock`, `autorun`) are optional.
    Option `autorun` defaults to `true` so that scoping is run automatically upon composer `update` or `install` command.
    That is not what you want in all cases, so you can set it `false` if you need. 
-3. The easiest way how to use the scoper on development environment is to install WPify Scoper as a dev dependency.
+4. The easiest way how to use the scoper on development environment is to install WPify Scoper as a dev dependency.
    After each `composer install` or `composer update`, all the dependencies specified in `composer-deps.json` will be
    scoped for you.
-4. Add a `config.platform` option in your composer.json and composer-deps.json. This settings will make sure that the
+5. Add a `config.platform` option in your composer.json and composer-deps.json. This settings will make sure that the
    dependencies will be installed with the correct PHP version.
 
 **Example of `composer.json` with its default values**
@@ -37,12 +38,8 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 {
   "config": {
     "platform": {
-      "php": "8.0"
+      "php": "8.0.30"
     }
-  },
-  "require-dev": {
-    "wpify/scoper": "^2.4",
-    "example/dependency": "^1.0"
   },
   "extra": {
     "wpify-scoper": {
@@ -70,23 +67,13 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 ```php
 <?php
 require_once __DIR__ . '/deps/scoper-autoload.php';
+require_once __DIR__ . '/deps/autoload.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 new \MyNamespaceForDeps\Example\Dependency();
 ```
 
 ## Deployment
-
-When you want to deploy the project, you need to scope your dependencies, but not to include dev depencencies. That can
-be achieved by following commands:
-
-```bash
-composer install --optimize-autoloader
-composer install --no-dev --optimize-autoloader
-```
-
-The first command installs all the dependencies and run the scoper, the second command removes dev dependencies
-including the scoper. After that, you can deploy the files manually.
 
 ### Deployment with Gitlab CI
 
@@ -135,13 +122,12 @@ jobs:
           php_version: 8.0
           php_extensions: json
           version: 2
-          dev: yes
-          progress: no
-          args: --optimize-autoloader
 
       - name: Remove dev dependencies
         run: |
-          composer install --no-dev --optimize-autoloader
+          composer global config --no-plugins allow-plugins.wpify/scoper true
+          composer global install wpify/scoper
+          composer install --prefer-dist --optimize-autoloader --no-ansi --no-interaction --no-dev
 
       - name: Archive plugin artifacts
         uses: actions/upload-artifact@v2

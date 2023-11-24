@@ -163,8 +163,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 				$scriptName = ScriptEvents::POST_INSTALL_CMD;
 			}
 
+			$phpscoper = realpath( __DIR__ . '/../../php-scoper/bin/php-scoper.phar' );
+
 			$composerJson->scripts->{$scriptName} = array(
-				'php-scoper.phar add-prefix --output-dir="' . $destination . '" --force --config="' . $scoperConfig . '"',
+				$phpscoper . ' add-prefix --output-dir="' . $destination . '" --force --config="' . $scoperConfig . '"',
 				'composer dump-autoload --working-dir="' . $destination . '" --optimize',
 				'php "' . $postinstallPath . '"',
 			);
