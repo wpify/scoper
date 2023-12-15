@@ -61,9 +61,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		);
 
 		if ( ! empty( $extra['wpify-scoper']['folder'] ) ) {
-			$configValues['folder']       = $this->path( getcwd(), $extra['wpify-scoper']['folder'] );
-			$configValues['composerjson'] = 'composer-' . $extra['wpify-scoper']['folder'] . '.json';
-			$configValues['composerlock'] = 'composer-' . $extra['wpify-scoper']['folder'] . '.lock';
+			$configValues['folder'] = $this->path( getcwd(), $extra['wpify-scoper']['folder'] );
 		}
 
 		if ( ! empty( $extra['wpify-scoper']['composerjson'] ) ) {
