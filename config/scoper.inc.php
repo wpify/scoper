@@ -52,6 +52,13 @@ return customize_php_scoper_config( array(
 				$content = str_replace( 'Template;\\n\\n', 'Template;\\n\\n use function ' . $prefix . '\\\\twig_escape_filter; \\n\\n', $content );
 			}
 
+			if ( strpos( $filePath, '/vendor/twig/twig/' ) !== false ) {
+				$content = str_replace( "'twig_get_attribute(", "'" . $prefix . "\\\\twig_get_attribute(", $content );
+				$content = str_replace( " = twig_ensure_traversable(", " = " . $prefix . "\\\\twig_ensure_traversable(", $content );
+				$content = preg_replace( '/new TwigFilter\(\s*\'([^\']+)\'\s*,\s*\'(_?twig_[^\']+)\'/m', 'new TwigFilter(\'$1\', \'' . $prefix . '\\\\$2\'', $content );
+				$content = preg_replace( '/\\$compiler->raw\(\s*\'(twig_[^(]+)\(/m', '\$compiler->raw(\'' . $prefix . '\\\\$1(', $content );
+			}
+			
 			usort( $config['expose-classes'], function ( $a, $b ) {
 				return strlen( $b ) - strlen( $a );
 			} );
