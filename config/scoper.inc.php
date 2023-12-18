@@ -58,7 +58,11 @@ return customize_php_scoper_config( array(
 				$content = preg_replace( '/new TwigFilter\(\s*\'([^\']+)\'\s*,\s*\'(_?twig_[^\']+)\'/m', 'new TwigFilter(\'$1\', \'' . $prefix . '\\\\$2\'', $content );
 				$content = preg_replace( '/\\$compiler->raw\(\s*\'(twig_[^(]+)\(/m', '\$compiler->raw(\'' . $prefix . '\\\\$1(', $content );
 			}
-			
+
+			if ( strpos( $filePath, '/vendor/giggsey/libphonenumber-for-php/' ) !== false ) {
+				$content = str_replace( $prefix . "\\\\array_merge", "array_merge", $content );
+			}
+
 			usort( $config['expose-classes'], function ( $a, $b ) {
 				return strlen( $b ) - strlen( $a );
 			} );
