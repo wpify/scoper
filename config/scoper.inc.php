@@ -53,6 +53,7 @@ return customize_php_scoper_config( array(
 			}
 
 			if ( strpos( $filePath, '/vendor/twig/twig/' ) !== false ) {
+				$content = str_replace( "'twig_escape_filter_is_safe'", "'" . $prefix . "\\\\twig_escape_filter_is_safe'", $content );
 				$content = str_replace( "'twig_get_attribute(", "'" . $prefix . "\\\\twig_get_attribute(", $content );
 				$content = str_replace( " = twig_ensure_traversable(", " = " . $prefix . "\\\\twig_ensure_traversable(", $content );
 				$content = preg_replace( '/new TwigFilter\(\s*\'([^\']+)\'\s*,\s*\'(_?twig_[^\']+)\'/m', 'new TwigFilter(\'$1\', \'' . $prefix . '\\\\$2\'', $content );
