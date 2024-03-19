@@ -115,6 +115,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
 	public function execute( Event $event ) {
 		$extra = $event->getComposer()->getPackage()->getExtra();
+
 		if (
 			isset( $extra['wpify-scoper']['autorun'] ) &&
 			$extra['wpify-scoper']['autorun'] === false &&
@@ -188,6 +189,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			}
 
 			$useDevDependencies = true;
+
 			if ( $event->getName() === self::SCOPER_UPDATE_NO_DEV_CMD || $event->getName() === self::SCOPER_INSTALL_NO_DEV_CMD ) {
 				$useDevDependencies = false;
 			}
@@ -275,6 +277,16 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$output      = new ConsoleOutput();
 		$application = new Application();
 
-		return $application->run( new ArrayInput( array( 'command' => $command ) ), $output );
+		return $application->run(
+			new ArrayInput(
+				array(
+					'command'               => $command,
+					'--working-dir'         => $path,
+					'--no-dev'              => ! $useDevDependencies,
+					'--optimize-autoloader' => true,
+				),
+			),
+			$output,
+		);
 	}
 }
