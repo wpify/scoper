@@ -34,12 +34,12 @@
     "wpify/php-scoper": "^0.18"
   },
   "require-dev": {
-    "jetbrains/phpstorm-stubs": "^v2023.2",
-    "johnpbloch/wordpress": "^6.3",
+    "jetbrains/phpstorm-stubs": "^v2023.3",
+    "johnpbloch/wordpress": "^6.4",
     "nikic/php-parser": "^v4.17",
-    "woocommerce/action-scheduler": "^3.6",
-    "wpackagist-plugin/woocommerce": "^8.2",
-    "yahnis-elsts/plugin-update-checker": "^v5.2"
+    "woocommerce/action-scheduler": "^3.7.2",
+    "wpackagist-plugin/woocommerce": "^8.6",
+    "yahnis-elsts/plugin-update-checker": "^v5.4"
   },
   "extra": {
     "class": "Wpify\\Scoper\\Plugin",
