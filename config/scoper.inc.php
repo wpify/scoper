@@ -64,6 +64,10 @@ return customize_php_scoper_config( array(
 				$content = str_replace( $prefix . "\\\\array_merge", "array_merge", $content );
 			}
 
+			if ( strpos( $filePath, 'yahnis-elsts/plugin-update-checker' ) !== false ) {
+				$content = str_replace( '$checkerClass = $type', '$checkerClass = "WpifyWooDpdDeps\\\\".$type', $content );
+			}
+
 			usort( $config['expose-classes'], function ( $a, $b ) {
 				return strlen( $b ) - strlen( $a );
 			} );
