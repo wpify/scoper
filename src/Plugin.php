@@ -16,7 +16,9 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 class Plugin implements PluginInterface, EventSubscriberInterface {
 
 	public const SCOPER_INSTALL_CMD = 'scoper-install-cmd';
+	public const SCOPER_INSTALL_NO_DEV_CMD = 'scoper-install-no-dev-cmd';
 	public const SCOPER_UPDATE_CMD = 'scoper-update-cmd';
+	public const SCOPER_UPDATE_NO_DEV_CMD = 'scoper-update-no-dev-cmd';
 
 	protected $composer;
 	protected $io;
@@ -154,10 +156,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			file_put_contents( $postinstallPath, $postinstall );
 
 			$scriptName = $event->getName();
-			if ( $event->getName() === self::SCOPER_UPDATE_CMD ) {
+			if ( $event->getName() === self::SCOPER_UPDATE_CMD || $event->getName() === self::SCOPER_UPDATE_NO_DEV_CMD ) {
 				$scriptName = ScriptEvents::POST_UPDATE_CMD;
 			}
-			if ( $event->getName() === self::SCOPER_INSTALL_CMD ) {
+			if ( $event->getName() === self::SCOPER_INSTALL_CMD || $event->getName() === self::SCOPER_INSTALL_NO_DEV_CMD ) {
 				$scriptName = ScriptEvents::POST_INSTALL_CMD;
 			}
 
@@ -178,12 +180,18 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$command = 'install';
 			if (
 				$event->getName() === ScriptEvents::POST_UPDATE_CMD ||
-				$event->getName() === self::SCOPER_UPDATE_CMD
+				$event->getName() === self::SCOPER_UPDATE_CMD ||
+				$event->getName() === self::SCOPER_UPDATE_NO_DEV_CMD
 			) {
 				$command = 'update';
 			}
 
-			$this->runInstall( $source, $command );
+			$useDevDependencies = true;
+			if ( $event->getName() === self::SCOPER_UPDATE_NO_DEV_CMD || $event->getName() === self::SCOPER_INSTALL_NO_DEV_CMD ) {
+				$useDevDependencies = false;
+			}
+
+			$this->runInstall( $source, $command, $useDevDependencies );
 		}
 	}
 
@@ -262,13 +270,14 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		file_put_contents( $path, $json );
 	}
 
-	private function runInstall( string $path, string $command = 'install' ) {
+	private function runInstall( string $path, string $command = 'install', bool $useDevDependencies = true) {
 		$output      = new ConsoleOutput();
 		$application = new Application();
 
 		return $application->run( new ArrayInput( array(
 			'command'                => $command,
 			'--working-dir'          => $path,
+			'--no-dev' => !$useDevDependencies,
 			'--optimize-autoloader'  => true,
 		) ), $output );
 	}
