@@ -24,8 +24,6 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
    file, but serves only for scoped dependencies. Dependencies that you don't want to scope comes to `composer.json`.
 3. Add `extra.wpify-scoper.prefix` to you `composer.json`, where you can specify the namespace, where your dependencies
    will be in. All other config options (`folder`, `globals`, `composerjson`, `composerlock`, `autorun`) are optional.
-   Option `autorun` defaults to `true` so that scoping is run automatically upon composer `update` or `install` command.
-   That is not what you want in all cases, so you can set it `false` if you need. 
 4. The easiest way how to use the scoper on development environment is to install WPify Scoper as a dev dependency.
    After each `composer install` or `composer update`, all the dependencies specified in `composer-deps.json` will be
    scoped for you.
@@ -40,6 +38,9 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
     "platform": {
       "php": "8.0.30"
     }
+  },
+  "scripts": {
+    "wpify-scoper": "wpify-scoper"
   },
   "extra": {
     "wpify-scoper": {
@@ -57,10 +58,15 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 }
 ```
 
-4. Scoped dependencies will be in `deps` folder of your project. You must include the scoped autoload alongside with the
+6. Option `autorun` defaults to `true` so that scoping is run automatically upon composer `update` or `install` command.
+   That is not what you want in all cases, so you can set it `false` if you need.
+   To start prefixing manually, you need to add for example the line `"wpify-scoper": "wpify-scoper"` to the "scripts" section of your composer.json. 
+   You then run the script with the command `composer wpify-scoper install` or `composer wpify-scoper update`.
+
+7. Scoped dependencies will be in `deps` folder of your project. You must include the scoped autoload alongside with the
    composer autoloader.
 
-5. After that, you can use your dependencies with the namespace.
+8. After that, you can use your dependencies with the namespace.
 
 **Example PHP file:**
 
