@@ -65,7 +65,7 @@ return customize_php_scoper_config( array(
 			}
 
 			if ( strpos( $filePath, 'yahnis-elsts/plugin-update-checker' ) !== false ) {
-				$content = str_replace( '$checkerClass = $type', '$checkerClass = "WpifyWooDpdDeps\\\\".$type', $content );
+				$content = str_replace( '$checkerClass = $type', '$checkerClass = "'. $prefix . '\\\\".$type', $content );
 			}
 
 			usort( $config['expose-classes'], function ( $a, $b ) {
