@@ -20,8 +20,10 @@ $prefix      = $config['prefix'];
 $source      = $config['source'];
 $destination = $config['destination'];
 
-return customize_php_scoper_config( array(
-	'prefix'                     => $prefix,
+// remove source and destination from the config, as they're not part of php-scoper config
+unset( $config['source'], $config['destination'] );
+
+return customize_php_scoper_config( array_merge( $config, array(
 	'finders'                    => array(
 		Finder::create()
 		      ->files()
@@ -93,4 +95,4 @@ return customize_php_scoper_config( array(
 	'expose-global-constants' => false,
 	'expose-global-classes'   => false,
 	'expose-global-functions' => false,
-) );
+) ) );
