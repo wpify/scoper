@@ -34,11 +34,11 @@
     "wpify/php-scoper": "^0.18"
   },
   "require-dev": {
-    "jetbrains/phpstorm-stubs": "^v2023.3",
-    "johnpbloch/wordpress": "^6.4",
-    "nikic/php-parser": "^v4.17",
-    "woocommerce/action-scheduler": "^3.8",
-    "wpackagist-plugin/woocommerce": "^9",
+    "jetbrains/phpstorm-stubs": "^v2024.1",
+    "johnpbloch/wordpress": "*",
+    "nikic/php-parser": "^v4.19.1",
+    "woocommerce/action-scheduler": "*",
+    "wpackagist-plugin/woocommerce": "*",
     "yahnis-elsts/plugin-update-checker": "^v5.4"
   },
   "extra": {

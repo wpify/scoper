@@ -64,9 +64,11 @@ return customize_php_scoper_config( array(
 			if ( strpos( $filePath, '/vendor/giggsey/libphonenumber-for-php/' ) !== false ) {
 				$content = str_replace( $prefix . "\\\\array_merge", "array_merge", $content );
 			}
+
 			if ( strpos( $filePath, '/league/oauth2-client' ) !== false ) {
 				$content = str_replace( "League\\\\OAuth2\\\\Client\\\\Grant", $prefix . "\\\\League\\\\OAuth2\\\\Client\\\\Grant", $content );
 			}
+
 			if ( strpos( $filePath, 'yahnis-elsts/plugin-update-checker' ) !== false ) {
 				$content = str_replace( '$checkerClass = $type', '$checkerClass = "'. $prefix . '\\\\".$type', $content );
 			}
@@ -80,6 +82,14 @@ return customize_php_scoper_config( array(
 			$replacements = array();
 
 			foreach ( $config['expose-classes'] as $symbol ) {
+				$searches[]     = "\\$prefix\\$symbol";
+				$replacements[] = "\\$symbol";
+
+				$searches[]     = "use $prefix\\$symbol";
+				$replacements[] = "use $symbol";
+			}
+
+			foreach ( $config['expose-namespaces'] as $symbol ) {
 				$searches[]     = "\\$prefix\\$symbol";
 				$replacements[] = "\\$symbol";
 
