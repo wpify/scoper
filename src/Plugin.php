@@ -57,7 +57,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			'folder'       => $this->path( getcwd(), 'deps' ),
 			'temp'         => $this->path( getcwd(), 'tmp-' . substr( str_shuffle( md5( microtime() ) ), 0, 10 ) ),
 			'prefix'       => $prefix,
-			'globals'      => array( 'wordpress', 'woocommerce' ),
+			'globals'      => array( 'wordpress', 'woocommerce', 'action-scheduler', 'wp-cli' ),
 			'composerjson' => 'composer-deps.json',
 			'composerlock' => 'composer-deps.lock',
 		);
@@ -220,10 +220,17 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$config['destination']       = $destination;
 		$config['exclude-constants'] = array( 'NULL', 'TRUE', 'FALSE' );
 
-		if ( in_array( 'wordpress', $this->globals ) ) {
+		if ( in_array( 'action-scheduler', $this->globals ) ) {
 			$config = array_merge_recursive(
 				$config,
-				require $this->path( $symbols_dir, 'wordpress.php' ),
+				require $this->path( $symbols_dir, 'action-scheduler.php' ),
+			);
+		}
+
+		if ( in_array( 'plugin-update-checker', $this->globals ) ) {
+			$config = array_merge_recursive(
+				$config,
+				require $this->path( $symbols_dir, 'plugin-update-checker.php' ),
 			);
 		}
 
@@ -234,10 +241,17 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			);
 		}
 
-		if ( in_array( 'plugin-update-checker', $this->globals ) ) {
+		if ( in_array( 'wordpress', $this->globals ) ) {
 			$config = array_merge_recursive(
 				$config,
-				require $this->path( $symbols_dir, 'plugin-update-checker.php' ),
+				require $this->path( $symbols_dir, 'wordpress.php' ),
+			);
+		}
+
+		if ( in_array( 'wp-cli', $this->globals ) ) {
+			$config = array_merge_recursive(
+				$config,
+				require $this->path( $symbols_dir, 'wp-cli.php' ),
 			);
 		}
 

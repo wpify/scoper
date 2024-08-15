@@ -39,7 +39,8 @@
     "nikic/php-parser": "^v4.19.1",
     "woocommerce/action-scheduler": "*",
     "wpackagist-plugin/woocommerce": "*",
-    "yahnis-elsts/plugin-update-checker": "^v5.4"
+    "yahnis-elsts/plugin-update-checker": "^v5.4",
+    "wp-cli/wp-cli": "^v2.11.0"
   },
   "extra": {
     "class": "Wpify\\Scoper\\Plugin",

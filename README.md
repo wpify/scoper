@@ -48,7 +48,9 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
       "folder": "deps",
       "globals": [
         "wordpress",
-        "woocommerce"
+        "woocommerce", 
+        "action-scheduler", 
+        "wp-cli"
       ],
       "composerjson": "composer-deps.json",
       "composerlock": "composer-deps.lock",

@@ -50,7 +50,7 @@ function resolve( Node $node ) {
 	return array();
 }
 
-function get_files( string $folder ) {
+function get_files( string $folder, string $root ) {
 	$files  = array();
 	$folder = realpath( $folder );
 
@@ -62,7 +62,7 @@ function get_files( string $folder ) {
 
 		foreach ( $found as $file ) {
 			$real_path       = $file->getRealPath();
-			$normalized_path = str_replace( realpath( __DIR__ . '/../sources' ) . '/', '', $real_path );
+			$normalized_path = str_replace( realpath( __DIR__ . '/../' . $root ) . '/', '', $real_path );
 
 			if ( preg_match( "/\/vendor\//i", $normalized_path ) || preg_match( "/\/wp-content\//i", $normalized_path ) ) {
 				continue;
@@ -77,8 +77,8 @@ function get_files( string $folder ) {
 	return $files;
 }
 
-function extract_symbols( string $where, string $result ) {
-	$files   = get_files( $where );
+function extract_symbols( string $where, string $root, string $result ) {
+	$files   = get_files( $where, $root );
 	$symbols = array();
 
 	foreach ( $files as $file ) {
@@ -109,7 +109,8 @@ function extract_symbols( string $where, string $result ) {
 	echo ">>> " . $count . " symbols exported to " . $result . "\n";
 }
 
-extract_symbols( __DIR__ . '/../sources/wordpress', realpath( __DIR__ . '/../symbols' ) . '/wordpress.php' );
-extract_symbols( __DIR__ . '/../sources/plugin-woocommerce', realpath( __DIR__ . '/../symbols' ) . '/woocommerce.php' );
-// extract_symbols( __DIR__ . '/../vendor/yahnis-elsts/plugin-update-checker', realpath( __DIR__ . '/../symbols' ) . '/plugin-update-checker.php' );
-extract_symbols( __DIR__ . '/../sources/plugin-action-scheduler/', realpath( __DIR__ . '/../symbols' ) . '/action-scheduler.php' );
+extract_symbols( __DIR__ . '/../sources/wordpress', 'sources', realpath( __DIR__ . '/../symbols' ) . '/wordpress.php' );
+extract_symbols( __DIR__ . '/../sources/plugin-woocommerce', 'sources', realpath( __DIR__ . '/../symbols' ) . '/woocommerce.php' );
+//extract_symbols( __DIR__ . '/../vendor/yahnis-elsts/plugin-update-checker', 'vendor', realpath( __DIR__ . '/../symbols' ) . '/plugin-update-checker.php' );
+extract_symbols( __DIR__ . '/../sources/plugin-action-scheduler', 'sources', realpath( __DIR__ . '/../symbols' ) . '/action-scheduler.php' );
+extract_symbols( __DIR__ . '/../vendor/wp-cli/wp-cli',  'vendor', realpath( __DIR__ . '/../symbols' ) . '/wp-cli.php' );
