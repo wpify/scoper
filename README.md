@@ -75,7 +75,6 @@ that. It has an up-to-date database of all WordPress and WooCommerce symbols tha
 ```php
 <?php
 require_once __DIR__ . '/deps/scoper-autoload.php';
-require_once __DIR__ . '/deps/autoload.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 new \MyNamespaceForDeps\Example\Dependency();
