@@ -61,6 +61,7 @@ return customize_php_scoper_config( array_merge( $config, array(
 				$content = preg_replace( '/new TwigFilter\(\s*\'([^\']+)\'\s*,\s*\'(_?twig_[^\']+)\'/m', 'new TwigFilter(\'$1\', \'' . $prefix . '\\\\$2\'', $content );
 				$content = preg_replace( '/\\$compiler->raw\(\s*\'(twig_[^(]+)\(/m', '\$compiler->raw(\'' . $prefix . '\\\\$1(', $content );
 				$content = str_replace( "'\\\\Twig\\\\", "'\\\\" . $prefix . "\\\\Twig\\\\", $content );
+				$content = str_replace( "'\\Twig\\", "'" . $prefix . "\\Twig\\", $content );
 			}
 
 			if ( strpos( $filePath, '/vendor/giggsey/libphonenumber-for-php/' ) !== false ) {
