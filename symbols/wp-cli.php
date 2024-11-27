@@ -66,7 +66,7 @@
     6 => 'WP_CLI_VERSION',
     7 => 'WP_CLI_START_MICROTIME',
   ),
-  'expose-functions' => 
+  'exclude-functions' => 
   array (
     0 => 'commandfactorytests_get_doc_comment_func_1_win',
     1 => 'commandfactorytests_get_doc_comment_func_2_win',

@@ -1,5 +1,5 @@
 <?php return array (
-  'expose-functions' => 
+  'exclude-functions' => 
   array (
     0 => 'as_enqueue_async_action',
     1 => 'as_schedule_single_action',
@@ -11,8 +11,8 @@
     7 => 'as_has_scheduled_action',
     8 => 'as_get_scheduled_actions',
     9 => 'as_get_datetime_object',
-    10 => 'action_scheduler_register_3_dot_8_dot_1',
-    11 => 'action_scheduler_initialize_3_dot_8_dot_1',
+    10 => 'action_scheduler_register_3_dot_9_dot_0',
+    11 => 'action_scheduler_initialize_3_dot_9_dot_0',
     12 => 'wc_schedule_single_action',
     13 => 'wc_schedule_recurring_action',
     14 => 'wc_schedule_cron_action',

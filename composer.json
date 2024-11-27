@@ -36,7 +36,7 @@
   "require-dev": {
     "jetbrains/phpstorm-stubs": "^v2024.1",
     "johnpbloch/wordpress": "*",
-    "nikic/php-parser": "^v4.19.1",
+    "nikic/php-parser": "^v5.3.1",
     "woocommerce/action-scheduler": "*",
     "wpackagist-plugin/woocommerce": "*",
     "yahnis-elsts/plugin-update-checker": "^v5.4",
