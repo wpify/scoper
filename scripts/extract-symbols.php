@@ -10,7 +10,7 @@ function get_parser() {
 	static $parser;
 
 	if ( empty( $parser ) ) {
-		$parser = ( new ParserFactory() )->createForVersion( \PhpParser\PhpVersion::fromString("8.0.0") );
+		$parser = ( new ParserFactory() )->createForVersion( \PhpParser\PhpVersion::fromString("8.1.0") );
 	}
 
 	return $parser;
