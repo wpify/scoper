@@ -48,8 +48,8 @@ file_put_contents( $autoload_static_path, $autoload_static );
 // fix scoper autoload - comment exposed classes and functions as we don't want to expose anything
 $scoper_autoload_path = path( $destination, 'vendor', 'scoper-autoload.php' );
 $scoper_autoload 	= file_get_contents( $scoper_autoload_path );
-$scoper_autoload = preg_replace('/^humbug_phpscoper_expose_.*;$/m', '// $0', $scoper_autoload );
-$scoper_autoload = preg_replace('/^if \(!function_exists\(.*}$/m', '// $0', $scoper_autoload );
+$scoper_autoload = preg_replace('/^humbug_phpscoper_expose_.*;$/m', '// $0 // commented by WPify Scoper', $scoper_autoload );
+$scoper_autoload = preg_replace('/^if \(!function_exists\(.*}$/m', '// $0 // commented by WPify Scoper', $scoper_autoload );
 file_put_contents( $scoper_autoload_path, $scoper_autoload );
 
 // copy composer.lock
