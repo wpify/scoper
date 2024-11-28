@@ -20,9 +20,9 @@ function resolve( Node $node ) {
 	if ( $node instanceof Node\Stmt\Namespace_ ) {
 		$namespace = join( '\\', $node->name->getParts() );
 
-		return array( 'expose-namespaces' => $namespace );
+		return array( 'exclude-namespaces' => $namespace );
 	} elseif ( $node instanceof Node\Stmt\Class_ ) {
-		return array( 'expose-classes' => array( $node->name->name ) );
+		return array( 'exclude-classes' => array( $node->name->name ) );
 	} elseif ( $node instanceof Node\Stmt\Function_ ) {
 		return array( 'exclude-functions' => array( $node->name->name ) );
 	} elseif ( $node instanceof Node\Stmt\If_ ) {
@@ -36,15 +36,15 @@ function resolve( Node $node ) {
 
 		return $symbols;
 	} elseif ( $node instanceof Node\Stmt\Trait_ ) {
-		return array( 'expose-classes' => array( $node->name->name ) );
+		return array( 'exclude-classes' => array( $node->name->name ) );
 	} elseif ( $node instanceof Node\Stmt\Interface_ ) {
-		return array( 'expose-classes' => array( $node->name->name ) );
+		return array( 'exclude-classes' => array( $node->name->name ) );
 	} elseif (
 		$node instanceof Node\Stmt\Expression
 		&& $node->expr instanceof Node\Expr\FuncCall
 		&& in_array( 'define', $node->expr->name->getParts() )
 	) {
-		return array( 'expose-constants' => array( $node->expr->args[0]->value->value ) );
+		return array( 'exclude-constants' => array( $node->expr->args[0]->value->value ) );
 	}
 
 	return array();

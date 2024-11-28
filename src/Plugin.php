@@ -215,10 +215,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			exit;
 		}
 
-		$config['prefix']            = $this->prefix;
-		$config['source']            = $source;
-		$config['destination']       = $destination;
-		$config['exclude-constants'] = array( 'NULL', 'TRUE', 'FALSE' );
+		$config['prefix']                  = $this->prefix;
+		$config['source']                  = $source;
+		$config['destination']             = $destination;
+		$config['exclude-constants']       = array( 'NULL', 'TRUE', 'FALSE' );
 
 		if ( in_array( 'action-scheduler', $this->globals ) ) {
 			$config = array_merge_recursive(

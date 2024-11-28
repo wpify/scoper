@@ -34,13 +34,13 @@
     "wpify/php-scoper": "^0.18"
   },
   "require-dev": {
-    "jetbrains/phpstorm-stubs": "^v2024.1",
+    "jetbrains/phpstorm-stubs": "*",
     "johnpbloch/wordpress": "*",
     "nikic/php-parser": "^v5.3.1",
     "woocommerce/action-scheduler": "*",
     "wpackagist-plugin/woocommerce": "*",
-    "yahnis-elsts/plugin-update-checker": "^v5.4",
-    "wp-cli/wp-cli": "^v2.11.0"
+    "yahnis-elsts/plugin-update-checker": "*",
+    "wp-cli/wp-cli": "*"
   },
   "extra": {
     "class": "Wpify\\Scoper\\Plugin",

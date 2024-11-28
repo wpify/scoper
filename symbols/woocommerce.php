@@ -1,5 +1,5 @@
 <?php return array (
-  'expose-constants' => 
+  'exclude-constants' => 
   array (
     0 => 'WC_PLUGIN_FILE',
   ),
@@ -959,7 +959,7 @@
     951 => 'woocommerce_store_api_register_payment_requirements',
     952 => 'woocommerce_store_api_get_formatter',
   ),
-  'expose-classes' => 
+  'exclude-classes' => 
   array (
     0 => 'WC_Brands_Block_Templates',
     1 => 'BlockTemplateUtilsDuplicated',
@@ -1515,7 +1515,7 @@
     552 => 'ActionScheduler_Schedule_Deprecated',
     553 => 'WC_Interactivity_Initial_State',
   ),
-  'expose-namespaces' => 
+  'exclude-namespaces' => 
   array (
     0 => 'WooCommerce\\Admin',
     1 => 'Automattic\\WooCommerce\\RestApi',

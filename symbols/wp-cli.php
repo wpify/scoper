@@ -1,5 +1,5 @@
 <?php return array (
-  'expose-namespaces' => 
+  'exclude-namespaces' => 
   array (
     0 => 'WP_CLI\\Tests\\Traverser',
     1 => 'WP_CLI\\Tests\\CSV',
@@ -24,7 +24,7 @@
     131 => 'WP_CLI\\Iterators',
     141 => 'WP_CLI\\Utils',
   ),
-  'expose-classes' => 
+  'exclude-classes' => 
   array (
     0 => 'WpOrgApiTest',
     1 => 'InflectorTest',
@@ -56,7 +56,7 @@
     27 => 'CLI_Cache_Command',
     28 => 'CLI_Alias_Command',
   ),
-  'expose-constants' => 
+  'exclude-constants' => 
   array (
     0 => 'WP_CLI_ROOT',
     1 => 'WP_CLI_VENDOR_DIR',

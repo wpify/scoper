@@ -20,7 +20,7 @@
     16 => 'wc_next_scheduled_action',
     17 => 'wc_get_scheduled_actions',
   ),
-  'expose-classes' => 
+  'exclude-classes' => 
   array (
     0 => 'ActionScheduler_AsyncRequest_QueueRunner',
     1 => 'ActionScheduler_WPCLI_Clean_Command',
@@ -91,7 +91,7 @@
     66 => 'ActionScheduler_AdminView_Deprecated',
     67 => 'ActionScheduler_Schedule_Deprecated',
   ),
-  'expose-namespaces' => 
+  'exclude-namespaces' => 
   array (
     0 => 'Action_Scheduler\\WP_CLI',
     2 => 'Action_Scheduler\\Migration',

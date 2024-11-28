@@ -76,7 +76,7 @@ return customize_php_scoper_config( array_merge( $config, array(
 				$content = str_replace( '$checkerClass = $type', '$checkerClass = "'. $prefix . '\\\\".$type', $content );
 			}
 
-			usort( $config['expose-classes'], function ( $a, $b ) {
+			usort( $config['exclude-classes'], function ( $a, $b ) {
 				return strlen( $b ) - strlen( $a );
 			} );
 
@@ -84,7 +84,7 @@ return customize_php_scoper_config( array_merge( $config, array(
 			$searches     = array();
 			$replacements = array();
 
-			foreach ( $config['expose-classes'] as $symbol ) {
+			foreach ( $config['exclude-classes'] as $symbol ) {
 				$searches[]     = "\\$prefix\\$symbol";
 				$replacements[] = "\\$symbol";
 
@@ -92,7 +92,7 @@ return customize_php_scoper_config( array_merge( $config, array(
 				$replacements[] = "use $symbol";
 			}
 
-			foreach ( $config['expose-namespaces'] as $symbol ) {
+			foreach ( $config['exclude-namespaces'] as $symbol ) {
 				$searches[]     = "\\$prefix\\$symbol";
 				$replacements[] = "\\$symbol";
 

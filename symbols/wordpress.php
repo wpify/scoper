@@ -4011,7 +4011,7 @@
     4035 => 'confirm_blog_signup',
     4036 => 'signup_get_available_languages',
   ),
-  'expose-constants' => 
+  'exclude-constants' => 
   array (
     0 => 'DOING_CRON',
     1 => 'WP_USE_THEMES',
@@ -4458,7 +4458,7 @@
     472 => 'SHORTINIT',
     473 => 'REQUESTS_SILENCE_PSR0_DEPRECATIONS',
   ),
-  'expose-classes' => 
+  'exclude-classes' => 
   array (
     0 => 'WP_Post_Comments_List_Table',
     1 => 'WP_Privacy_Data_Export_Requests_List_Table',
@@ -4965,7 +4965,7 @@
     504 => 'WP_Customize_Nav_Menu_Location_Control',
     505 => 'WP_HTTP_IXR_Client',
   ),
-  'expose-namespaces' => 
+  'exclude-namespaces' => 
   array (
     0 => 'PHPMailer\\PHPMailer',
     3 => 'SimplePie',
