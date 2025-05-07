@@ -17,12 +17,12 @@
     68 => 'WP_CLI\\Loggers',
     72 => 'WP_CLI\\Context',
     76 => 'WP_CLI\\Bootstrap',
-    99 => 'WP_CLI\\Fetchers',
-    105 => 'WP_CLI\\Traverser',
-    107 => 'WP_CLI\\Dispatcher',
-    125 => 'WP_CLI\\Exception',
-    131 => 'WP_CLI\\Iterators',
-    141 => 'WP_CLI\\Utils',
+    100 => 'WP_CLI\\Fetchers',
+    106 => 'WP_CLI\\Traverser',
+    108 => 'WP_CLI\\Dispatcher',
+    126 => 'WP_CLI\\Exception',
+    132 => 'WP_CLI\\Iterators',
+    142 => 'WP_CLI\\Utils',
   ),
   'exclude-classes' => 
   array (
@@ -74,6 +74,5 @@
     3 => 'commandfactorytests_get_doc_comment_func_2',
     4 => 'ini_set',
     5 => 'get_magic_quotes_gpc',
-    6 => 'array_column',
   ),
 );
