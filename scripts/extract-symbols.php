@@ -2,9 +2,41 @@
 
 use PhpParser\Error;
 use PhpParser\Node;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitorAbstract;
 use PhpParser\ParserFactory;
 
 require_once __DIR__ . '/../vendor/autoload.php';
+
+/**
+ * Collects every define() call in a file, no matter how deeply nested.
+ *
+ * WordPress declares most of its constants inside functions (see
+ * wp_initial_constants() and friends in wp-includes/default-constants.php),
+ * so walking only the top-level statements misses them.
+ *
+ * Constants are always global regardless of the namespace the define() call
+ * sits in, so unlike classes and functions they're safe to collect everywhere.
+ */
+class ConstantCollector extends NodeVisitorAbstract {
+	/** @var string[] */
+	public $constants = array();
+
+	public function enterNode( Node $node ) {
+		if (
+			$node instanceof Node\Expr\FuncCall
+			&& $node->name instanceof Node\Name
+			&& strtolower( $node->name->toString() ) === 'define'
+			&& isset( $node->args[0] )
+			&& $node->args[0] instanceof Node\Arg
+			&& $node->args[0]->value instanceof Node\Scalar\String_
+		) {
+			$this->constants[] = $node->args[0]->value->value;
+		}
+
+		return null;
+	}
+}
 
 function get_parser() {
 	static $parser;
@@ -20,7 +52,7 @@ function resolve( Node $node ) {
 	if ( $node instanceof Node\Stmt\Namespace_ ) {
 		$namespace = join( '\\', $node->name->getParts() );
 
-		return array( 'exclude-namespaces' => $namespace );
+		return array( 'exclude-namespaces' => array( $namespace ) );
 	} elseif ( $node instanceof Node\Stmt\Class_ ) {
 		return array( 'exclude-classes' => array( $node->name->name ) );
 	} elseif ( $node instanceof Node\Stmt\Function_ ) {
@@ -39,14 +71,9 @@ function resolve( Node $node ) {
 		return array( 'exclude-classes' => array( $node->name->name ) );
 	} elseif ( $node instanceof Node\Stmt\Interface_ ) {
 		return array( 'exclude-classes' => array( $node->name->name ) );
-	} elseif (
-		$node instanceof Node\Stmt\Expression
-		&& $node->expr instanceof Node\Expr\FuncCall
-		&& in_array( 'define', $node->expr->name->getParts() )
-	) {
-		return array( 'exclude-constants' => array( $node->expr->args[0]->value->value ) );
 	}
 
+	// Constants are handled by ConstantCollector, which walks the whole AST.
 	return array();
 }
 
@@ -87,6 +114,18 @@ function extract_symbols( string $where, string $root, string $result ) {
 
 			foreach ( $ast as $node ) {
 				$symbols = array_merge_recursive( $symbols, resolve( $node ) );
+			}
+
+			$collector = new ConstantCollector();
+			$traverser = new NodeTraverser();
+			$traverser->addVisitor( $collector );
+			$traverser->traverse( $ast );
+
+			if ( ! empty( $collector->constants ) ) {
+				$symbols['exclude-constants'] = array_merge(
+					$symbols['exclude-constants'] ?? array(),
+					$collector->constants,
+				);
 			}
 		} catch ( Error $error ) {
 			echo "Parse error: {$error->getMessage()} in {$file}\n";
