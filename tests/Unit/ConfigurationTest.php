@@ -176,7 +176,9 @@ final class ConfigurationTest extends TestCase {
 		yield 'custom name'        => array( 'scoped.json', 'scoped.lock' );
 		yield 'nested'             => array( 'build/scoped.json', 'build/scoped.lock' );
 		yield 'json in the middle' => array( 'my.json.deps.json', 'my.json.deps.lock' );
-		yield 'no json suffix'     => array( 'deps-manifest', 'deps-manifest' );
+		// `.lock` is appended rather than substituted: deriving the same name as the manifest would
+		// have the run publish the lock over the manifest it was resolved from.
+		yield 'no json suffix'     => array( 'deps-manifest', 'deps-manifest.lock' );
 	}
 
 	#[DataProvider( 'lockDerivations' )]
@@ -185,6 +187,17 @@ final class ConfigurationTest extends TestCase {
 
 		self::assertSame( self::ROOT . '/' . $json, $config->composerJson );
 		self::assertSame( self::ROOT . '/' . $lock, $config->composerLock );
+	}
+
+	public function test_a_lock_that_points_at_the_manifest_is_rejected(): void {
+		$this->expectException( RuntimeException::class );
+		$this->expectExceptionMessage( 'points at the manifest /projects/plugin/scoped.json' );
+
+		$this->config( array(
+			'prefix'       => 'A',
+			'composerjson' => 'scoped.json',
+			'composerlock' => 'scoped.json',
+		) );
 	}
 
 	public function test_an_explicit_lock_wins_over_the_derived_one(): void {

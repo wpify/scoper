@@ -9,6 +9,7 @@ use Composer\Util\Platform;
 use OutOfBoundsException;
 use RuntimeException;
 use stdClass;
+use Throwable;
 
 /**
  * Drives the scoping pipeline: nested install, php-scoper, dump-autoload, fixups.
@@ -63,6 +64,8 @@ final class Scoper {
 		$destination = $this->config->destinationDir();
 		$scoper      = $this->phpScoperPhar();
 
+		$inherited = $this->clearInheritedEnv();
+
 		Platform::putEnv( self::RUNNING_ENV, '1' );
 
 		try {
@@ -106,16 +109,61 @@ final class Scoper {
 
 			( new ScopedTreeInstaller( $this->config, $this->io ) )->install( $destination );
 
+			$this->removeTempDir();
+
 			return 0;
+		} catch ( Throwable $throwable ) {
+			// The temp folder is deliberately kept: a failed swap leaves the project's previous
+			// dependencies in a backup inside it, and deleting it here would destroy the very tree
+			// the error message tells the user how to recover.
+			$this->io->writeError( sprintf(
+				'<warning>wpify-scoper: the run failed, the workspace %s was kept - remove it once you no longer need it.</warning>',
+				$this->config->tempDir
+			) );
+
+			throw $throwable;
 		} finally {
 			Platform::clearEnv( self::RUNNING_ENV );
 
-			if ( is_dir( $this->config->tempDir ) && ! $this->filesystem->removeDirectory( $this->config->tempDir ) ) {
-				$this->io->writeError( sprintf(
-					'<warning>wpify-scoper: cannot remove the temporary folder %s</warning>',
-					$this->config->tempDir
-				) );
+			foreach ( $inherited as $name => $value ) {
+				Platform::putEnv( $name, $value );
 			}
+		}
+	}
+
+	/**
+	 * Drops the environment variables that would send the nested Composer somewhere else.
+	 *
+	 * `COMPOSER` names the manifest file Composer reads, so it would look for the project's
+	 * composer-deps.json inside the temp workspace; `COMPOSER_VENDOR_DIR` names the directory it
+	 * installs into, and php-scoper's finder only ever looks at the workspace's own vendor/. Both
+	 * are inherited by the child process, which is how a run that works everywhere else fails for
+	 * the one developer who exports them.
+	 *
+	 * @return array<string, string> The values to put back afterwards.
+	 */
+	private function clearInheritedEnv(): array {
+		$saved = array();
+
+		foreach ( array( 'COMPOSER', 'COMPOSER_VENDOR_DIR' ) as $name ) {
+			$value = Platform::getEnv( $name );
+
+			if ( is_string( $value ) && '' !== $value ) {
+				$saved[ $name ] = $value;
+
+				Platform::clearEnv( $name );
+			}
+		}
+
+		return $saved;
+	}
+
+	private function removeTempDir(): void {
+		if ( is_dir( $this->config->tempDir ) && ! $this->filesystem->removeDirectory( $this->config->tempDir ) ) {
+			$this->io->writeError( sprintf(
+				'<warning>wpify-scoper: cannot remove the temporary folder %s</warning>',
+				$this->config->tempDir
+			) );
 		}
 	}
 

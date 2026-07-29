@@ -52,10 +52,22 @@ final class ProcessComposerRunner implements ComposerRunner {
 			IOInterface::VERBOSE
 		);
 
-		// executeTty() keeps the child attached to the terminal when there is one - progress bars
-		// and authentication prompts keep working - and falls back to a piped run that streams
-		// into $io and captures stderr when there is not (CI).
-		return $this->process->executeTty( $command, $workingDir );
+		// Composer's process-timeout (300 seconds by default) is sized for the git and network
+		// commands it shells out to. A nested install plus a php-scoper pass over a real dependency
+		// tree routinely takes longer, and being killed halfway through leaves the project with a
+		// half-written scoped tree. The steps used to run in-process, where no timeout applied.
+		$timeout = ProcessExecutor::getTimeout();
+
+		ProcessExecutor::setTimeout( 0 );
+
+		try {
+			// executeTty() keeps the child attached to the terminal when there is one - progress
+			// bars and authentication prompts keep working - and falls back to a piped run that
+			// streams into $io and captures stderr when there is not (CI).
+			return $this->process->executeTty( $command, $workingDir );
+		} finally {
+			ProcessExecutor::setTimeout( $timeout );
+		}
 	}
 
 	/**

@@ -11,9 +11,11 @@ use Composer\Package\RootPackage;
 use Composer\Plugin\Capability\CommandProvider as ComposerCommandProvider;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
+use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Symfony\Component\Console\Output\OutputInterface;
 use Wpify\Scoper\CommandProvider;
 use Wpify\Scoper\Configuration;
@@ -126,6 +128,33 @@ final class PluginTest extends TestCase {
 
 		self::assertNotNull( $config );
 		self::assertSame( 'Acme\\Deps', $config->prefix );
+	}
+
+	/**
+	 * Composer does not guard activate(): an exception thrown there aborts every command in the
+	 * project, including `composer require`, `composer remove` and `composer config` - everything
+	 * the user would use to repair the configuration. The error has to wait until the pipeline is
+	 * actually asked to run.
+	 */
+	public function test_a_configuration_error_does_not_abort_activation(): void {
+		$io = new BufferIO( '', OutputInterface::VERBOSITY_VERY_VERBOSE );
+
+		( new Plugin() )->activate( $this->composer( array( 'wpify-scoper' => array( 'folder' => 'deps' ) ) ), $io );
+
+		self::assertTrue( true );
+	}
+
+	public function test_a_configuration_error_is_reported_when_the_pipeline_runs(): void {
+		$io       = new BufferIO( '' );
+		$composer = $this->composer( array( 'wpify-scoper' => array( 'folder' => 'deps' ) ) );
+		$plugin   = new Plugin();
+
+		$plugin->activate( $composer, $io );
+
+		$this->expectException( RuntimeException::class );
+		$this->expectExceptionMessage( 'extra.wpify-scoper.prefix is missing' );
+
+		$plugin->execute( new Event( ScriptEvents::POST_INSTALL_CMD, $composer, $io ) );
 	}
 
 	// --- the re-entrancy guard --------------------------------------------------------------------

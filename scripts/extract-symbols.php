@@ -31,11 +31,20 @@ $targets = array(
 foreach ( $targets as list( $directory, $relativeTo, $file, $package ) ) {
 	$output  = $root . '/symbols/' . $file;
 	$symbols = $extractor->extract( $directory, $relativeTo );
+	$errors  = $extractor->errors();
 
-	foreach ( $extractor->errors() as $error ) {
+	foreach ( $errors as $error ) {
 		fwrite( STDERR, 'wpify-scoper: ' . $error . PHP_EOL );
 
 		$failed = true;
+	}
+
+	// The list this run produced is missing whatever the failing files declared. Writing it would
+	// leave a truncated symbol table in the working tree, one commit away from scoping WordPress.
+	if ( array() !== $errors ) {
+		fwrite( STDERR, sprintf( 'wpify-scoper: %s was left untouched' . PHP_EOL, $output ) );
+
+		continue;
 	}
 
 	$version = InstalledVersions::isInstalled( $package )

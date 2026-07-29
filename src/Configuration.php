@@ -87,11 +87,14 @@ final class Configuration {
 			$settings = array();
 		}
 
+		// Validated first: a missing prefix is by far the most common configuration mistake, and it
+		// is the one the message has to be about.
+		$prefix = self::validatePrefix( $settings['prefix'] ?? null, $rootDir );
+
 		$folder = self::resolve( $filesystem, $rootDir, self::stringOrNull( $settings['folder'] ?? null ) ?? 'deps' );
 
 		$composerJson = self::stringOrNull( $settings['composerjson'] ?? null ) ?? 'composer-deps.json';
-		$composerLock = self::stringOrNull( $settings['composerlock'] ?? null )
-			?? preg_replace( '/\.json$/', '.lock', $composerJson );
+		$composerLock = self::stringOrNull( $settings['composerlock'] ?? null ) ?? self::deriveLock( $composerJson );
 
 		$temp = self::stringOrNull( $settings['temp'] ?? null ) ?? 'tmp-' . bin2hex( random_bytes( 5 ) );
 
@@ -103,14 +106,26 @@ final class Configuration {
 			$globals = array_values( array_map( self::stringOf( ... ), $settings['globals'] ) );
 		}
 
+		$composerJson = self::resolve( $filesystem, $rootDir, $composerJson );
+		$composerLock = self::resolve( $filesystem, $rootDir, $composerLock );
+
+		// The run publishes the generated lock over `composerlock`, so pointing it at the manifest
+		// would destroy the file the whole dependency set is declared in.
+		if ( $composerJson === $composerLock ) {
+			throw new RuntimeException( sprintf(
+				'wpify-scoper: extra.wpify-scoper.composerlock points at the manifest %s, which the run would overwrite. Set it to a different file.',
+				$composerJson
+			) );
+		}
+
 		return new self(
 			rootDir: $rootDir,
 			vendorDir: $filesystem->normalizePath( '' === $vendorDir ? $rootDir . '/vendor' : $vendorDir ),
-			prefix: self::validatePrefix( $settings['prefix'] ?? null, $rootDir ),
+			prefix: $prefix,
 			folder: $folder,
 			globals: $globals,
-			composerJson: self::resolve( $filesystem, $rootDir, $composerJson ),
-			composerLock: self::resolve( $filesystem, $rootDir, (string) $composerLock ),
+			composerJson: $composerJson,
+			composerLock: $composerLock,
 			tempDir: self::resolve( $filesystem, $rootDir, $temp ),
 			// Preserved verbatim from the previous implementation: only a literal `false` opts out.
 			autorun: ! ( array_key_exists( 'autorun', $settings ) && false === $settings['autorun'] ),
@@ -163,6 +178,19 @@ final class Configuration {
 		}
 
 		return $prefix;
+	}
+
+	/**
+	 * The lock file that goes with a manifest.
+	 *
+	 * A manifest that does not end in `.json` gets `.lock` appended rather than substituted: a
+	 * plain `preg_replace()` left the two names identical, and the run publishes the lock over
+	 * whatever `composerlock` names.
+	 */
+	private static function deriveLock( string $composerJson ): string {
+		return str_ends_with( $composerJson, '.json' )
+			? substr( $composerJson, 0, -5 ) . '.lock'
+			: $composerJson . '.lock';
 	}
 
 	private static function resolve( Filesystem $filesystem, string $rootDir, string $path ): string {

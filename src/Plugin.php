@@ -10,6 +10,7 @@ use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
+use RuntimeException;
 
 class Plugin implements PluginInterface, Capable, EventSubscriberInterface {
 
@@ -35,6 +36,16 @@ class Plugin implements PluginInterface, Capable, EventSubscriberInterface {
 	private ?Configuration $configuration = null;
 
 	/**
+	 * The message of the configuration error, when there is one.
+	 *
+	 * Composer does not guard `activate()`, so an exception thrown from there aborts every command
+	 * in the project - including `composer require`, `composer remove` and everything else the user
+	 * would reach for to fix the configuration. The error is therefore carried until the pipeline is
+	 * actually asked to run, which is where it is actionable.
+	 */
+	private ?string $configurationError = null;
+
+	/**
 	 * @return array<string, string>
 	 */
 	public static function getSubscribedEvents(): array {
@@ -54,9 +65,16 @@ class Plugin implements PluginInterface, Capable, EventSubscriberInterface {
 	}
 
 	public function activate( Composer $composer, IOInterface $io ): void {
-		$this->composer      = $composer;
-		$this->io            = $io;
-		$this->configuration = Configuration::fromComposer( $composer );
+		$this->composer = $composer;
+		$this->io       = $io;
+
+		try {
+			$this->configuration = Configuration::fromComposer( $composer );
+		} catch ( RuntimeException $exception ) {
+			$this->configurationError = $exception->getMessage();
+
+			return;
+		}
 
 		if ( null === $this->configuration || ! $io->isVerbose() ) {
 			return;
@@ -90,6 +108,10 @@ class Plugin implements PluginInterface, Capable, EventSubscriberInterface {
 	}
 
 	public function execute( Event $event ): void {
+		if ( null !== $this->configurationError ) {
+			throw new RuntimeException( $this->configurationError );
+		}
+
 		if ( null === $this->configuration || null === $this->io ) {
 			return;
 		}

@@ -74,7 +74,7 @@ scoped tree that fatals on the server.
 | `globals` | all four | Which shipped symbol lists to keep unscoped: `wordpress`, `woocommerce`, `action-scheduler`, `wp-cli`. An unknown name produces a warning and is ignored. |
 | `composerjson` | `composer-deps.json` | The manifest describing the dependencies to scope. Only ever read, never written. |
 | `composerlock` | `composerjson` with `.lock` | The lock file for that manifest. Written by the plugin — commit it. |
-| `temp` | `tmp-` + random | The scratch workspace. Removed when the run finishes, successfully or not. |
+| `temp` | `tmp-` + random | The scratch workspace. Removed when the run succeeds; kept when it fails, because a failed swap parks your previous `deps/` in there. |
 | `autorun` | `true` | Whether `composer install`/`composer update` also scope. Only a literal `false` turns it off. |
 
 ### Running it manually
@@ -117,9 +117,9 @@ new \MyNamespaceForDeps\Example\Dependency();
 - **`deps/`** — your call. It is a build artifact, so most projects build it in CI (see
   *Deployment* below) and add it to `.gitignore`. Commit it if you deploy by pushing a git
   checkout to the server and cannot run Composer there.
-- **`tmp-*`** — never. Add `tmp-*` to `.gitignore`; a failed run used to leave one behind, and
-  while it is now cleaned up in every path, an interrupted process still cannot clean up after
-  itself.
+- **`tmp-*`** — never. Add `tmp-*` to `.gitignore`. A successful run removes its workspace; a
+  failed one keeps it on purpose, because a swap that could not be completed leaves your previous
+  `deps/` in there. Delete it once you have recovered whatever you need.
 
 ## Deployment
 
@@ -241,7 +241,7 @@ plugin was symlinked in through a path repository.
 | A WooCommerce or PHPMailer class is not found after scoping | Fixed in 4.0 — namespace exclusions only matched exactly, so children of `Automattic\WooCommerce` and `PHPMailer\PHPMailer` came out prefixed | Upgrade and re-scope. |
 | Your own vendor library collides with another plugin again after scoping | Fixed in 4.0 — prefix stripping was unanchored, so a vendor namespace starting with an excluded WordPress class name (`WPSEO\…`, `POBox\…`) was put back into the global namespace | Upgrade and re-scope. |
 | `scoper.custom.php` seems to be ignored | A non-standard `vendor-dir`, or a path-repository install, in a release before 4.0 | Upgrade; then run with `-v` to see which file is loaded. |
-| `tmp-XXXXXXXXXX/` left in the project root | The process was killed mid-run | Safe to delete. Add `tmp-*` to `.gitignore`. |
+| `tmp-XXXXXXXXXX/` left in the project root | The run failed or was killed mid-run | Check it for a `deps-backup-*` holding your previous `deps/`, then delete it. Add `tmp-*` to `.gitignore`. |
 | `the Composer binary could not be located` | The pipeline was driven from the deprecated `bin/wpify-scoper` without `composer` on `PATH` | Use `composer wpify-scoper install`, or set `COMPOSER_BINARY`. |
 | `php-scoper was not found` | `wpify/php-scoper` is missing from the install | Reinstall the plugin. The message lists every path that was tried. |
 | `already running (WPIFY_SCOPER_RUNNING is set), skipping this nested invocation` | Your `composer-deps.json` also carries an `extra.wpify-scoper` block | Remove it. The scoped manifest must not configure the scoper. |

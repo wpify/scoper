@@ -63,13 +63,16 @@ final class SymbolUnprefixer {
 			return $content;
 		}
 
-		return (string) preg_replace_callback(
+		// `?? $content` because preg_replace_callback() returns null when PCRE gives up. Casting
+		// that to string would hand php-scoper an empty file, which is far worse than a symbol left
+		// prefixed: the scoped tree would be missing the class altogether.
+		return preg_replace_callback(
 			$this->pattern,
 			function ( array $matches ): string {
 				return $this->isExcluded( (string) $matches[2] ) ? $matches[1] . $matches[2] : $matches[0];
 			},
 			$content
-		);
+		) ?? $content;
 	}
 
 	/**

@@ -26,6 +26,7 @@ result before shipping it** — several of the fixes below alter which symbols e
 - **A failed swap could leave a project with no dependencies at all.** The old tree was deleted
   before the new one was in place. It is now moved aside into the temporary workspace and restored
   if the move fails, so a full disk or a permissions error can no longer lose the previous build.
+  A failed run keeps that workspace instead of deleting it, because the backup lives in there.
 - **Prefix stripping was unanchored and mangled third-party code.** The patcher used a plain
   `str_replace()` per excluded symbol, so any vendor namespace or class whose name *started* with
   an excluded WordPress symbol had the prefix stripped off it and was put straight back into the
@@ -42,7 +43,9 @@ result before shipping it** — several of the fixes below alter which symbols e
   present.
 - **A missing or invalid `prefix` silently did nothing.** `composer install` exited 0, no `deps/`
   folder appeared, and there was no message. It is now a configuration error with an actionable
-  message, and the prefix is validated as a PHP namespace.
+  message, and the prefix is validated as a PHP namespace. It is raised when the pipeline runs, not
+  while the plugin activates: Composer does not guard plugin activation, so throwing there would
+  break every command in the project — including the ones needed to fix the configuration.
 - **`scoper.custom.php` was silently ignored in most installations.** The project root was located
   by looking for the literal string `vendor/wpify/scoper` in the plugin's own path, which fails for
   a custom `vendor-dir`, a symlinked path repository and a global install. The root is now taken

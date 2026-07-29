@@ -43,16 +43,22 @@ final class ScopedTreeInstaller {
 		// The key has to stay a plain identifier, so everything that is not alphanumeric goes.
 		$keyPrefix = strtolower( (string) preg_replace( '/[^a-zA-Z0-9]/', '', $this->config->prefix ) );
 
+		$contents = $this->read( $path );
+
 		// Only inside the $files array: the same key pattern also matches a $classMap entry for a
 		// single-segment global class name (`'Requests' => ...`), and prefixing that breaks the map.
-		$this->write( $path, (string) preg_replace_callback(
+		//
+		// `?? $matches[0]` / `?? $contents` because preg_replace() returns null when PCRE gives up,
+		// and writing that as a string would truncate the autoloader of the whole scoped tree to
+		// nothing rather than leave a key unprefixed.
+		$this->write( $path, preg_replace_callback(
 			'/public\s+static\s+\$files\s*=\s*array\s*\(.*?\n\s*\);/s',
 			static function ( array $matches ) use ( $keyPrefix ): string {
-				return (string) preg_replace( "/'([[:alnum:]]+)'(\s*=>)/", "'" . $keyPrefix . "\$1'\$2", $matches[0] );
+				return preg_replace( "/'([[:alnum:]]+)'(\s*=>)/", "'" . $keyPrefix . "\$1'\$2", $matches[0] ) ?? $matches[0];
 			},
-			$this->read( $path ),
+			$contents,
 			1
-		) );
+		) ?? $contents );
 	}
 
 	/**
@@ -62,16 +68,32 @@ final class ScopedTreeInstaller {
 		$path     = $this->path( $destination, 'vendor', 'scoper-autoload.php' );
 		$autoload = $this->read( $path );
 
-		$autoload = (string) preg_replace( '/^humbug_phpscoper_expose_.*;$/m', '// $0 // commented by WPify Scoper', $autoload );
-		$autoload = (string) preg_replace( '/^if \(!function_exists\(.*}$/m', '// $0 // commented by WPify Scoper', $autoload );
+		// `?? $autoload` because preg_replace() returns null when PCRE gives up, and an empty
+		// scoper-autoload.php takes the whole scoped tree down with it.
+		$autoload = preg_replace( '/^humbug_phpscoper_expose_.*;$/m', '// $0 // commented by WPify Scoper', $autoload ) ?? $autoload;
+		$autoload = preg_replace( '/^if \(!function_exists\(.*}$/m', '// $0 // commented by WPify Scoper', $autoload ) ?? $autoload;
 
 		$this->write( $path, $autoload );
 	}
 
 	private function publishLock( string $destination ): void {
+		$lock = $this->path( $destination, 'composer.lock' );
+
+		// Checked before the existing lock is touched: removing it first and only then finding out
+		// there is nothing to put in its place loses the file the project committed.
+		if ( ! is_file( $lock ) ) {
+			throw new RuntimeException( sprintf(
+				'wpify-scoper: the scoped run produced no %s, keeping %s as it is.',
+				$lock,
+				$this->config->composerLock
+			) );
+		}
+
+		// remove() rather than letting copy() overwrite: the destination may be a symlink, and
+		// writing through it would clobber whatever it points at.
 		$this->remove( $this->config->composerLock );
 
-		if ( ! @copy( $this->path( $destination, 'composer.lock' ), $this->config->composerLock ) ) {
+		if ( ! @copy( $lock, $this->config->composerLock ) ) {
 			throw new RuntimeException( sprintf( 'wpify-scoper: cannot write %s.', $this->config->composerLock ) );
 		}
 	}
@@ -123,6 +145,10 @@ final class ScopedTreeInstaller {
 	/**
 	 * Moves a tree, falling back to copy + verify + delete when rename() cannot do it
 	 * (different filesystems report EXDEV, Windows fails on locked files).
+	 *
+	 * Success means the destination holds the tree. Failing to delete the source afterwards is a
+	 * leftover, not a failed move: reporting it as one made the caller "restore" a backup on top of
+	 * the tree it had just installed, which left the deps folder as a mix of both.
 	 */
 	private function moveTree( string $from, string $to ): bool {
 		if ( @rename( $from, $to ) ) {
@@ -135,7 +161,11 @@ final class ScopedTreeInstaller {
 			return false;
 		}
 
-		return $this->remove( $from );
+		if ( ! $this->remove( $from ) ) {
+			$this->warn( sprintf( 'cannot remove %s after copying it to %s', $from, $to ) );
+		}
+
+		return true;
 	}
 
 	/**
