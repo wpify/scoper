@@ -1,0 +1,12 @@
+{
+  "name": "acme/lib",
+  "version": "1.0.0",
+  "autoload": {
+    "psr-4": {
+      "Acme\\Lib\\": "src/",
+      "WPSEO\\": "wpseo/",
+      "POBox\\": "pobox/"
+    },
+    "files": [ "src/functions.php" ]
+  }
+}

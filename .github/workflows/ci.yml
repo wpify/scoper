@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Validate and analyse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - uses: ramsey/composer-install@v3
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress --error-format=github
+
+      - name: Code style
+        run: vendor/bin/php-cs-fixer check --diff --show-progress=none
+
+  test:
+    name: Unit and golden files (PHP ${{ matrix.php }}, ${{ matrix.dependencies }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The supported window: php-scoper requires PHP 8.2+, and 8.2 leaves security support on
+        # 2026-12-31. Drop 8.2 from the matrix and from composer.json's `require` in one PR.
+        php: [ '8.2', '8.3', '8.4', '8.5' ]
+        dependencies: [ 'highest' ]
+        include:
+          # composer/composer spans a wide API surface across ^2.6 and this plugin touches it
+          # directly, so the oldest resolvable set gets one job of its own.
+          - php: '8.2'
+            dependencies: 'lowest'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      - uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: ${{ matrix.dependencies }}
+
+      - name: Unit and golden-file suite
+        run: vendor/bin/phpunit --testsuite=unit
+
+  integration:
+    name: End-to-end scoping
+    runs-on: ubuntu-latest
+    # Spawns Composer and php-scoper against the offline fixture. One PHP version is enough: what
+    # it exercises is the pipeline, and the unit matrix already covers the language surface.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Integration suite
+        run: vendor/bin/phpunit --testsuite=integration
+
+  smoke:
+    name: Install into a scratch project
+    runs-on: ubuntu-latest
+    # The only job that exercises Composer actually loading the plugin: an exception thrown from
+    # activate() or a broken `extra.class` is invisible to every other tier.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: scoper
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Require the plugin from a path repository and scope a dependency
+        run: |
+          set -euo pipefail
+          mkdir -p scratch && cd scratch
+          composer init --no-interaction --name=test/scratch --require-dev=psr/log:^3.0 --stability=stable
+          composer config repositories.scoper path "$GITHUB_WORKSPACE/scoper"
+          composer config --no-plugins allow-plugins.wpify/scoper true
+          composer config extra.wpify-scoper.prefix 'Test\Deps'
+          printf '{"require":{"psr/log":"^3.0"}}\n' > composer-deps.json
+          composer require wpify/scoper:@dev --no-interaction
+
+          test -f deps/scoper-autoload.php
+          grep -q 'namespace Test\\\\Deps\\\\Psr\\\\Log;' deps/psr/log/src/LoggerInterface.php
+          # The workspace must not survive the run.
+          ! compgen -G 'tmp-*' > /dev/null
+
+      - name: The scoped tree loads
+        run: |
+          cd scratch
+          php -r 'require "deps/scoper-autoload.php"; exit(interface_exists("Test\\Deps\\Psr\\Log\\LoggerInterface") ? 0 : 1);'

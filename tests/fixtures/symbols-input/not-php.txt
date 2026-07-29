@@ -1,0 +1,3 @@
+Not a PHP file. The extractor only reads *.php, so nothing here is ever parsed.
+
+class Fixture_Must_Not_Be_Collected_Text {}

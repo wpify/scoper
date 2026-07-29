@@ -2,40 +2,69 @@
 <?php
 
 use Composer\Factory;
-use Composer\IO\NullIO;
+use Composer\IO\ConsoleIO;
 use Composer\Script\Event;
+use Composer\Util\Platform;
+use Symfony\Component\Console\Helper\HelperSet;
+use Symfony\Component\Console\Input\ArgvInput;
 use Wpify\Scoper\Plugin;
 
-$vendorRoot = __DIR__ . '/../../..';
-require_once $vendorRoot . '/autoload.php';
+// $_composer_autoload_path is set by Composer's generated bin proxy (composer-runtime-api ^2.2).
+// The fallbacks cover a checkout of this repository and a direct call that bypasses the proxy;
+// the old `__DIR__ . '/../../..'` fatalled for both, and for symlinked path repositories.
+$autoload = $GLOBALS['_composer_autoload_path'] ?? null;
 
-$command = null;
-
-if ( isset( $argv[1] ) && $argv[1] === 'install' ) {
-	$command = Plugin::SCOPER_INSTALL_CMD;
+if ( null === $autoload ) {
+	foreach ( array(
+		__DIR__ . '/../vendor/autoload.php',
+		__DIR__ . '/../../../autoload.php',
+	) as $candidate ) {
+		if ( file_exists( $candidate ) ) {
+			$autoload = $candidate;
+			break;
+		}
+	}
 }
 
-if ( isset( $argv[1] ) && $argv[1] === 'update' ) {
-	$command = Plugin::SCOPER_UPDATE_CMD;
+if ( null === $autoload ) {
+	fwrite( STDERR, 'wpify-scoper: could not locate the Composer autoloader.' . PHP_EOL );
+	exit( 1 );
 }
 
-if ( $command === null ) {
-	echo 'Usage: wpify-scoper [command]' . PHP_EOL;
-	echo '  commands:' . PHP_EOL;
-	echo '    update' . PHP_EOL;
-	echo '    install' . PHP_EOL . PHP_EOL;
-	exit;
+require_once $autoload;
+
+$command = match ( $argv[1] ?? null ) {
+	'install' => Plugin::SCOPER_INSTALL_CMD,
+	'update'  => Plugin::SCOPER_UPDATE_CMD,
+	default   => null,
+};
+
+if ( null === $command ) {
+	fwrite( STDERR, 'Usage: wpify-scoper [command]' . PHP_EOL );
+	fwrite( STDERR, '  commands:' . PHP_EOL );
+	fwrite( STDERR, '    update' . PHP_EOL );
+	fwrite( STDERR, '    install' . PHP_EOL . PHP_EOL );
+	exit( 1 );
 }
 
-$factory    = new Factory();
-$ioInterace = new NullIO();
-$composer   = $factory->createComposer( $ioInterace );
-$fakeEvent  = new Event(
-	$command,
-	$composer,
-	$ioInterace
+fwrite(
+	STDERR,
+	'wpify-scoper: this binary is deprecated, use "composer wpify-scoper ' . $argv[1] . '" instead.' . PHP_EOL
 );
 
-$scoper = new Plugin();
-$scoper->activate( $composer, $ioInterace );
-$scoper->execute( $fakeEvent );
+$input = new ArgvInput();
+$input->setInteractive( Platform::isTty() );
+
+$io = new ConsoleIO( $input, Factory::createOutput(), new HelperSet() );
+
+try {
+	$composer = ( new Factory() )->createComposer( $io );
+	$plugin   = new Plugin();
+
+	$plugin->activate( $composer, $io );
+	$plugin->execute( new Event( $command, $composer, $io ) );
+} catch ( Throwable $exception ) {
+	$io->writeError( '<error>' . $exception->getMessage() . '</error>' );
+
+	exit( 1 );
+}

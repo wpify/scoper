@@ -1,0 +1,27 @@
+# Keep dist archives to what the plugin actually loads at runtime.
+#
+# Everything under /scripts is development-only: extract-symbols.php and the SymbolExtractor
+# behind it regenerate symbols/*.php from the WordPress sources, and nothing in src/, bin/ or
+# config/ references them. (This was not always true - scripts/postinstall.php used to be read
+# at runtime. Check again before adding a file here.)
+
+/.editorconfig          export-ignore
+/.gitattributes         export-ignore
+/.github                export-ignore
+/.gitignore             export-ignore
+/.php-cs-fixer.dist.php export-ignore
+/docs                   export-ignore
+/phpstan.neon           export-ignore
+/phpunit.xml.dist       export-ignore
+/scripts                export-ignore
+/tests                  export-ignore
+
+# Generated symbol tables.
+#
+# `linguist-generated=true` collapses them in GitHub pull request diffs, which is what makes the
+# scheduled regeneration PRs reviewable at all - a WordPress release moves thousands of lines.
+# `-diff` keeps git itself from trying to produce a textual diff of a 300 KB var_export dump.
+/symbols/*.php          linguist-generated=true -diff
+
+# The golden files and scoped-output fixtures are compared byte for byte.
+/tests/fixtures/**      -text
