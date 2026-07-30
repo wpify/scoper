@@ -106,10 +106,18 @@ Where the scoped tree is written, relative to your project root. Absolute paths 
 "folder": "web/app/deps"
 ```
 
-The directory is replaced wholesale on every run. Do not keep anything of your own in it.
+The directory is replaced wholesale on every run. Do not keep anything of your own in it. It must
+therefore be a path Composer itself never installs into: `vendor-prefixed` is fine, a bare `vendor/`
+would delete Composer's own vendor directory.
 
-Common non-default values: `web/app/deps` on Bedrock, or a subdirectory of `vendor/` such as
-`vendor/my-plugin-deps`. See [Deployment](deployment.md).
+> **Publishing to WordPress.org? Do not leave this at `deps`.** Plugin Check — mandatory for new
+> submissions since October 2024, and blocking on an error — skips `vendor`, `vendor_prefixed` and
+> `vendor-prefixed`, but not `deps`. A scoped tree in `deps/` is scanned as if you had written it.
+> Set `"folder": "vendor-prefixed"` and read
+> [Publishing to WordPress.org](wordpress-org.md).
+
+Common non-default values: `vendor-prefixed` for a plugin headed to WordPress.org, or `web/app/deps`
+on Bedrock. See [Deployment](deployment.md).
 
 ### `globals`
 

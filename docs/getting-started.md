@@ -94,6 +94,12 @@ Pick something nobody else will: your plugin's own vendor namespace with `\Deps`
 good default. `Deps` on its own is not — two plugins that both chose it collide exactly the way
 this tool exists to prevent.
 
+> **If this plugin is going to WordPress.org, set `folder` as well** — to `vendor-prefixed`.
+> WordPress.org runs every new submission through Plugin Check, which skips `vendor-prefixed/` but
+> scans the default `deps/`, and reports your scoped libraries as if you had written them. Set it
+> now rather than moving the tree later: the autoloader path in step 7 and the `.gitignore` in
+> step 8 both change with it. See [Publishing to WordPress.org](wordpress-org.md).
+
 ## 5. Run it
 
 ```bash
@@ -171,6 +177,10 @@ Note that `add_action()` is called unprefixed. That is the point of the symbol l
 own names are excluded from the rewrite, so your plugin talks to WordPress normally while its
 dependencies live somewhere private.
 
+If you set `folder` in step 4, require the autoloader from there instead — for
+`"folder": "vendor-prefixed"` that is
+`require_once __DIR__ . '/vendor-prefixed/scoper-autoload.php';`. Everything else is unchanged.
+
 ## 8. Decide what to commit
 
 ```gitignore
@@ -183,6 +193,15 @@ dependencies live somewhere private.
 - `deps/` — your call. It is a build artifact, so most projects build it in CI and ignore it.
   Commit it if you deploy by pushing a git checkout to a server where you cannot run Composer.
 - `tmp-*` — never. Always ignore it.
+
+If you set `folder` to `vendor-prefixed` in step 4, ignore that path instead of `/deps/`. It is a
+sibling of `/vendor/` rather than a child, so it needs its own line:
+
+```gitignore
+/vendor/
+/vendor-prefixed/
+/tmp-*
+```
 
 [Deployment](deployment.md) covers the trade-off properly.
 
@@ -220,6 +239,8 @@ Note that these are for your **scoped** dependencies only. Plain `composer requi
 
 - [Configuration](configuration.md) — change the output folder, drop symbol lists you do not need,
   turn off automatic scoping.
+- [Publishing to WordPress.org](wordpress-org.md) — why the scoped tree belongs in `vendor/`, what
+  Plugin Check does and does not look at, and the checklist to run before you submit.
 - [Deployment](deployment.md) — GitLab CI, GitHub Actions, Bedrock, multi-plugin repositories.
 - [Customizing php-scoper](customizing.md) — when a dependency builds class names dynamically and
   php-scoper cannot see them.

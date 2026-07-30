@@ -8,6 +8,7 @@ How to get a scoped tree onto a server, and what to put in git.
 - [Deploying by git push](#deploying-by-git-push)
 - [Bedrock](#bedrock)
 - [Scoping into a subdirectory of `vendor/`](#scoping-into-a-subdirectory-of-vendor)
+- [Deploying to WordPress.org](#deploying-to-wordpressorg)
 - [Repositories with several plugins](#repositories-with-several-plugins)
 
 ## What to commit
@@ -162,15 +163,81 @@ Bedrock's own `.gitignore` already covers `web/app/plugins/` and `vendor/`. Add 
 ```
 
 This keeps one dependency directory in the project instead of two, which some deployment scripts
-prefer. It works, with two caveats:
+prefer. It works, with three caveats:
 
 - The directory is **replaced wholesale** on every run. It must be a path Composer itself never
-  installs into — a package name, not a bare `vendor/`.
+  installs into — a name no package you require could claim, and never a bare `vendor/`, which
+  would delete Composer's own vendor directory.
 - Anything that archives `vendor/` also archives the scoped tree. That is usually what you want;
   make sure it is not counted twice.
+- Anything that **excludes** `vendor/` from a release now excludes your dependencies too, and the
+  plugin fatals on activation with a missing class. Check `.distignore`, `.gitattributes`
+  (`export-ignore`), `rsync --exclude` rules and any `zip -x` in your build.
+
+That last one is why a plugin headed to WordPress.org is better served by `vendor-prefixed/` as a
+sibling of `vendor/` — it gets the same Plugin Check exemption without inheriting every rule
+written about the Composer vendor directory. See
+[Deploying to WordPress.org](#deploying-to-wordpressorg).
 
 The backup taken during the swap deliberately lives inside the `tmp-*` workspace rather than
 next to `folder`, precisely so that a `vendor/`-adjacent `.bak` cannot end up in a release build.
+
+## Deploying to WordPress.org
+
+Scope to `vendor-prefixed/` for these, not to `deps/` — WordPress.org's mandatory Plugin Check
+skips the first and scans the second. [Publishing to WordPress.org](wordpress-org.md) explains why
+and has the pre-submission checklist.
+
+```json
+"folder": "vendor-prefixed"
+```
+
+WordPress.org serves whatever is in SVN — nothing runs Composer there, so the release has to carry
+`vendor/` for Composer's autoloader **and** `vendor-prefixed/` for your scoped dependencies. With
+[10up's deploy action](https://github.com/10up/action-wordpress-plugin-deploy) that means building
+before the deploy step and keeping both out of `.distignore`:
+
+```yaml
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+
+      - run: composer global config --no-plugins allow-plugins.wpify/scoper true
+      - run: composer global require wpify/scoper:^4.0
+
+      - run: composer install --no-dev --optimize-autoloader
+
+      - uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+```
+
+That single `composer install` does both halves: Composer populates `vendor/`, and the
+`post-install-cmd` it fires writes the scoped tree into `vendor-prefixed/`. `--no-dev` propagates to
+the scoped run, so the `require-dev` block of `composer-deps.json` stays out of the release.
+
+The `.distignore` for that build excludes development directories and nothing else. Neither
+`/vendor` nor `/vendor-prefixed` belongs in it — the plugin needs both at runtime:
+
+```
+/.git
+/.github
+/.wordpress-org
+/node_modules
+/tests
+/tmp-*
+.distignore
+.gitignore
+composer.lock
+```
+
+`composer.json` and `composer-deps.json` stay in — reviewers are told to expect manifests, and
+yours are the only record of what the scoped tree was built from.
+
+In git, `/vendor-prefixed/` needs its own `.gitignore` line: it is a sibling of `/vendor/`, not a
+child, so the rule you already have does not cover it.
 
 ## Repositories with several plugins
 

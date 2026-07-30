@@ -24,6 +24,8 @@ than worked around. Check [Upgrading to 4.0](upgrading-to-4.md) before debugging
 | `the Composer binary could not be located` | The deprecated `bin/wpify-scoper` was driven from a pipeline with no `composer` on `PATH` | Use `composer wpify-scoper install`, or set `COMPOSER_BINARY`. |
 | `already running (WPIFY_SCOPER_RUNNING is set), skipping this nested invocation` | A scoping run was triggered from inside a scoping run | See [Nested invocation warning](#nested-invocation-warning). |
 | A vendored library breaks after scoping | It builds class names dynamically, so php-scoper cannot see them | Write a patcher — see [Customizing php-scoper](customizing.md). |
+| Plugin Check reports errors inside the scoped tree, or a WordPress.org submission is blocked by them | The scoped tree is in `deps/`, which Plugin Check scans | See [Plugin Check flags my scoped dependencies](#plugin-check-flags-my-scoped-dependencies). |
+| `Class "MyPlugin\Deps\…" not found` on a WordPress.org release only | The release build stripped `vendor/`, and the scoped tree was inside it | See [The scoped tree is missing from the release](#the-scoped-tree-is-missing-from-the-release). |
 | Two developers get different scoped output from the same commit | Different scoper versions | The scoper version is not in any lock file. Pin the same constraint everywhere; see [Installing](configuration.md#installing). |
 
 ## Nothing happens
@@ -78,6 +80,50 @@ extraction, and it is the most serious class of bug this project has.
 
 For a symbol WordPress does not declare but you still need unprefixed, use
 [`scoper.custom.php`](customizing.md).
+
+## Plugin Check flags my scoped dependencies
+
+```
+FILE: deps/guzzlehttp/guzzle/src/Handler/CurlFactory.php
+ERROR  curl_setopt() is discouraged. Use wp_remote_get() instead.
+```
+
+Plugin Check never scans `vendor`, `vendor_prefixed` or `vendor-prefixed`. It does scan `deps`,
+which is this plugin's default output folder, so a scoped Guzzle is read as code you wrote.
+
+There is nothing to fix in the library — any edit is undone by the next run. Move the tree instead:
+
+```json
+"folder": "vendor-prefixed"
+```
+
+then update the `require_once` in your plugin file to match, add `/vendor-prefixed/` to
+`.gitignore`, and re-scope. Since October 2024 an error here blocks a new WordPress.org submission
+outright, so this is worth getting right before you submit rather than after.
+[Publishing to WordPress.org](wordpress-org.md) covers the move and what the exemption does not
+buy you.
+
+## The scoped tree is missing from the release
+
+```
+PHP Fatal error: Uncaught Error: Class "MyPlugin\Deps\GuzzleHttp\Client" not found
+```
+
+on a published build, when the same commit works locally. The scoped tree is a build artifact and
+the release does not have it. Two causes:
+
+1. **The build never ran.** WordPress.org SVN and plain git deploys do not run Composer. The
+   release step has to `composer install --no-dev --optimize-autoloader` first — that populates
+   `vendor/` and fires the `post-install-cmd` that writes the scoped tree.
+2. **Something stripped the directory.** `.distignore`, `export-ignore` in `.gitattributes`, an
+   `rsync --exclude`, a `zip -x`. `vendor-prefixed/` has to ship, and so does `vendor/` — the
+   plugin needs Composer's autoloader too.
+
+Confirm by listing the published artifact rather than your working copy:
+
+```bash
+unzip -l my-plugin.zip | grep scoper-autoload
+```
 
 ## A `tmp-` directory was left behind
 

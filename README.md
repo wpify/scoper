@@ -91,6 +91,36 @@ That class is yours alone. The other plugin's Guzzle no longer matters.
 
 Full walkthrough with the verification steps: **[Getting started](docs/getting-started.md)**.
 
+## Publishing to WordPress.org?
+
+**Write the scoped tree to `vendor-prefixed/` instead.** Since October 2024 every new plugin
+submitted to the WordPress.org directory is run through
+[Plugin Check](https://wordpress.org/plugins/plugin-check/) first, and an error blocks the
+submission until it is fixed. Plugin Check skips `vendor-prefixed/` — it carries the name in its
+ignore list precisely so that prefixed dependencies do not raise false positives — but it does scan
+`deps/`, so a scoped Guzzle gets read as your code and reported for every `file_get_contents()` and
+`curl_*` call in it, none of which you can fix.
+
+```json
+{
+  "extra": {
+    "wpify-scoper": {
+      "prefix": "MyPlugin\\Deps",
+      "folder": "vendor-prefixed"
+    }
+  }
+}
+```
+
+```php
+require_once __DIR__ . '/vendor-prefixed/scoper-autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
+```
+
+Add `/vendor-prefixed/` to `.gitignore`, and make sure your release build does not strip it. The
+full picture — what the exemption does and does not cover, and the checklist to run before
+submitting — is in **[Publishing to WordPress.org](docs/wordpress-org.md)**.
+
 ## Documentation
 
 | | |
@@ -98,6 +128,7 @@ Full walkthrough with the verification steps: **[Getting started](docs/getting-s
 | **[Getting started](docs/getting-started.md)** | Install it and scope your first dependency, start to finish. |
 | **[Configuration](docs/configuration.md)** | Every `extra.wpify-scoper` key, every command, every environment variable. |
 | **[Troubleshooting](docs/troubleshooting.md)** | Symptom, cause, fix. Start here when something is wrong. |
+| **[Publishing to WordPress.org](docs/wordpress-org.md)** | Why the scoped tree belongs in `vendor-prefixed/`, and the pre-submission checklist. |
 | **[Deployment](docs/deployment.md)** | What to commit, CI recipes, Bedrock, multi-plugin repositories. |
 | **[Customizing php-scoper](docs/customizing.md)** | `scoper.custom.php` and patchers, for dependencies that need help. |
 | **[How it works](docs/how-it-works.md)** | The symbol lists, the pipeline, and why the scoped tree is swapped rather than written in place. |

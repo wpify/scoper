@@ -114,6 +114,17 @@ result before shipping it** — several of the fixes below alter which symbols e
   fails rather than opening a pull request if any symbol count drops — a silently truncated list is
   how a broken extractor would otherwise ship.
 - `CONTRIBUTING.md`, and a troubleshooting section in the README.
+- **[Publishing to WordPress.org](docs/wordpress-org.md).** WordPress.org has run every new
+  submission through Plugin Check since October 2024, and an error blocks it. Plugin Check skips
+  `vendor`, `vendor_prefixed` and `vendor-prefixed` but not `deps`, so the default output folder
+  gets scanned and scoped libraries are reported as code you wrote — for calls no third-party
+  library can be talked out of and you cannot patch. The new page recommends
+  `"folder": "vendor-prefixed"` for published plugins — a name Plugin Check carries specifically so
+  that prefixed dependencies do not raise false positives — gives the autoloader path that goes
+  with it, is clear about what the skip does *not* cover (licensing, unmaintained libraries,
+  bundling what WordPress already ships), and covers the two things that change with the move:
+  `/vendor-prefixed/` needs its own `.gitignore` line, and no release filter may strip it. The
+  default stays `deps` — this is documentation, not a behaviour change.
 - **An update notification.** A scoping run now ends by telling you when a newer release of the
   plugin exists, and how to get it — a plain command for a patch or minor, a link to the upgrade
   guide for a major, since `composer update` cannot cross one. It reads the same public Packagist
