@@ -115,7 +115,9 @@ jobs:
           composer require wpify/scoper:@dev --no-interaction
 
           test -f deps/scoper-autoload.php
-          grep -q 'namespace Test\\\\Deps\\\\Psr\\\\Log;' deps/psr/log/src/LoggerInterface.php
+          # -F: the namespace separator is a backslash, and letting grep treat it as a regex
+          # escape needs a different number of them here than in the file. Fixed-string wins.
+          grep -qF 'namespace Test\Deps\Psr\Log;' deps/psr/log/src/LoggerInterface.php
           # The workspace must not survive the run.
           ! compgen -G 'tmp-*' > /dev/null
 
