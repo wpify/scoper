@@ -1,0 +1,92 @@
+name: Missing or wrongly scoped symbol
+description: A WordPress, WooCommerce, Action Scheduler or WP-CLI name was prefixed when it should not have been (or the reverse).
+labels: [ bug, symbols ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most serious class of bug in this project: a symbol that should have stayed
+        unprefixed produces a call to a function that does not exist, on a production site, with
+        nothing in the build to warn you.
+
+        Use this form rather than the general bug report — it needs different information.
+
+  - type: input
+    id: symbol
+    attributes:
+      label: The symbol
+      description: The exact name, as declared upstream.
+      placeholder: "wp_get_environment_type"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of symbol is it?
+      options:
+        - Function
+        - Class / interface / trait / enum
+        - Constant
+        - Namespace
+    validations:
+      required: true
+
+  - type: dropdown
+    id: direction
+    attributes:
+      label: What went wrong?
+      options:
+        - It was prefixed, and should not have been
+        - It was left unprefixed, and should have been scoped
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: Which project declares it?
+      options:
+        - WordPress core
+        - WooCommerce
+        - Action Scheduler
+        - WP-CLI
+        - None of these (it is my own or a dependency's)
+    validations:
+      required: true
+
+  - type: input
+    id: upstream-version
+    attributes:
+      label: Version of that project on the affected site
+      placeholder: "WordPress 6.9.1"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: wpify/scoper version
+      placeholder: "4.0.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: |
+        The fatal error or wrong behaviour, plus the offending line from your scoped tree —
+        `grep -rn "<symbol>" deps/ | head`.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: globals
+    attributes:
+      label: Your extra.wpify-scoper block
+      description: In particular the `globals` list, if you set one.
+      render: json
+    validations:
+      required: true

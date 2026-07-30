@@ -1,0 +1,21 @@
+{
+  "name": "fixture/deps",
+  "description": "The scoped dependency set. Resolved entirely from the checked-in path repository, so the integration suite never touches the network.",
+  "repositories": [
+    {
+      "type": "path",
+      "url": "%%PKG_DIR%%/acme-lib",
+      "options": {
+        "symlink": false
+      }
+    },
+    {
+      "packagist.org": false
+    }
+  ],
+  "require": {
+    "acme/lib": "*"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

@@ -1,0 +1,110 @@
+name: Bug report
+description: Something the scoper does is wrong, or something it produces is broken.
+labels: [ bug ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: most reports are answered by
+        [Troubleshooting](https://github.com/wpify/scoper/blob/master/docs/troubleshooting.md),
+        and upgrades from 3.2 are covered by
+        [Upgrading to 4.0](https://github.com/wpify/scoper/blob/master/docs/upgrading-to-4.md).
+
+        **Do not report security issues here.** See
+        [SECURITY.md](https://github.com/wpify/scoper/blob/master/SECURITY.md).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. run `composer install`
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: wpify/scoper version
+      description: "`composer global show wpify/scoper` or `composer show wpify/scoper`"
+      placeholder: "4.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-type
+    attributes:
+      label: How is it installed?
+      options:
+        - Globally (composer global require)
+        - As a dev dependency (require-dev)
+        - Both
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+      description: "`php -v`. If it differs from your `config.platform.php`, say so."
+      placeholder: "8.2.20"
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra-block
+    attributes:
+      label: Your extra.wpify-scoper block
+      description: The `extra.wpify-scoper` section of your composer.json. Redact private package names if you must, but keep the structure.
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: deps-manifest
+    attributes:
+      label: Your composer-deps.json
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: verbose-output
+    attributes:
+      label: Output with -v
+      description: |
+        Run the failing command again with `-v` and paste the full output — `composer install -v`,
+        or `composer wpify-scoper install -v`. Use `-vvv` if `-v` is not revealing.
+
+        This is the single most useful thing in the report. It shows the configuration the scoper
+        actually resolved, which customization file it loaded, and every process it spawned.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: custom-config
+    attributes:
+      label: Your scoper.custom.php, if you have one
+      render: php
+    validations:
+      required: false
+
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: Anything else
+      description: Unusual layout (Bedrock, monorepo, path repositories, symlinked `deps/`), a non-default `vendor-dir`, exported `COMPOSER*` environment variables — anything that makes your setup not the default.
+    validations:
+      required: false

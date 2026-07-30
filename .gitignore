@@ -3,3 +3,9 @@
 /sources/
 /vendor/
 /composer.lock
+
+# Tooling caches and local overrides.
+/.phpunit.cache/
+/.php-cs-fixer.cache
+/phpstan.neon.local
+/phpunit.xml

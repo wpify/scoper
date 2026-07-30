@@ -1,0 +1,21 @@
+{
+  "name": "fixture/root",
+  "description": "Offline fixture exercising the wpify/scoper pipeline end to end.",
+  "type": "wordpress-plugin",
+  "require": {},
+  "config": {
+    "allow-plugins": {
+      "wpify/scoper": true
+    }
+  },
+  "extra": {
+    "wpify-scoper": {
+      "prefix": "FixtureDeps",
+      "folder": "deps",
+      "globals": [
+        "wordpress",
+        "woocommerce"
+      ]
+    }
+  }
+}

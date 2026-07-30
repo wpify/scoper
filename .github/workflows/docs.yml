@@ -1,0 +1,98 @@
+name: Docs
+
+# The README links into seven pages under docs/, and those pages cross-link each other. A rename
+# breaks relative links silently, and nobody notices until a reader lands on a 404.
+on:
+  pull_request:
+    paths:
+      - '**.md'
+      - '.github/workflows/docs.yml'
+  # No `paths` filter on push: the upgrade-guide job below has to run when a release tag is
+  # created, and that is exactly the push that touches no markdown at all.
+  push:
+    branches: [ master ]
+    tags: [ '*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  links:
+    name: Check links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # `vendor` and `sources` hold third-party READMEs whose dead links are not ours to fix.
+          args: >-
+            --no-progress
+            --max-retries 2
+            --exclude-path vendor
+            --exclude-path sources
+            --exclude-path CHANGELOG.md
+            './**/*.md'
+          fail: true
+
+  upgrade-guide:
+    name: Upgrade guide exists for the current major
+    runs-on: ubuntu-latest
+    steps:
+      # UpdateNotifier builds the upgrade-guide URL for a new major by convention, from a template
+      # rather than from anything it can verify. Nothing else would notice a major shipping without
+      # its guide until users started landing on a 404 months later, so the convention is asserted
+      # here instead.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check docs/upgrading-to-<major>.md
+        env:
+          # The major the guide convention starts at. Nothing before 4.0 has one and nothing ever
+          # will, so the check is vacuous until 4.0.0 is tagged.
+          FIRST_DOCUMENTED_MAJOR: 4
+        run: |
+          set -eu
+
+          tag="$(git tag --sort=-v:refname | head -n 1)"
+
+          if [ -z "$tag" ]; then
+            echo "No tags yet, nothing to assert."
+            exit 0
+          fi
+
+          newest="${tag%%.*}"
+
+          case "$newest" in
+            ''|*[!0-9]*)
+              echo "Newest tag '${tag}' is not numerically versioned, nothing to assert."
+              exit 0
+              ;;
+          esac
+
+          missing=0
+
+          # Every major from the first documented one up to the newest released one, so that a
+          # skipped major cannot open a hole either.
+          major="$FIRST_DOCUMENTED_MAJOR"
+          while [ "$major" -le "$newest" ]; do
+            guide="docs/upgrading-to-${major}.md"
+
+            if [ -f "$guide" ]; then
+              echo "ok: ${guide}"
+            else
+              echo "::error file=${guide}::Missing. UpdateNotifier sends users crossing into ${major}.x to this file, so without it the notice links a 404."
+              missing=1
+            fi
+
+            major=$(( major + 1 ))
+          done
+
+          exit "$missing"

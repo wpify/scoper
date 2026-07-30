@@ -2,9 +2,32 @@
   "name": "wpify/scoper",
   "description": "Composer plugin that scopes WordPress and WooCommerce dependencies for usage in WordPress plugins and themes.",
   "type": "composer-plugin",
+  "keywords": [
+    "wordpress",
+    "woocommerce",
+    "composer-plugin",
+    "php-scoper",
+    "scoper",
+    "prefixing",
+    "namespace",
+    "isolation",
+    "dependency-conflicts"
+  ],
+  "homepage": "https://github.com/wpify/scoper",
+  "support": {
+    "issues": "https://github.com/wpify/scoper/issues",
+    "source": "https://github.com/wpify/scoper",
+    "docs": "https://github.com/wpify/scoper#readme"
+  },
   "autoload": {
     "psr-4": {
       "Wpify\\Scoper\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Wpify\\Scoper\\Tools\\": "scripts/",
+      "Wpify\\Scoper\\Tests\\": "tests/"
     }
   },
   "license": "GPL-2.0-or-later",
@@ -18,7 +41,20 @@
     "bin/wpify-scoper"
   ],
   "scripts": {
-    "extract": "php ./scripts/extract-symbols.php"
+    "extract": "php ./scripts/extract-symbols.php",
+    "test": "phpunit --testsuite=unit",
+    "test:integration": "phpunit --testsuite=integration",
+    "test:all": "phpunit --testsuite=unit,integration",
+    "analyse": "phpstan analyse",
+    "cs": "php-cs-fixer check --diff",
+    "cs:fix": "php-cs-fixer fix"
+  },
+  "scripts-descriptions": {
+    "extract": "Regenerates symbols/*.php from the WordPress, WooCommerce, Action Scheduler and WP-CLI sources.",
+    "test": "Runs the fast unit and golden-file suite.",
+    "test:integration": "Runs the end-to-end scoping suite (spawns Composer and php-scoper).",
+    "analyse": "Runs PHPStan over src/, scripts/ and config/.",
+    "cs": "Checks the code style without changing anything."
   },
   "minimum-stability": "stable",
   "repositories": [
@@ -28,18 +64,22 @@
     }
   ],
   "require": {
-    "php": "^8.1",
+    "php": "^8.2",
     "composer-plugin-api": "^2.3",
+    "composer-runtime-api": "^2.2",
     "composer/composer": "^2.6",
     "wpify/php-scoper": "^0.18"
   },
   "require-dev": {
+    "friendsofphp/php-cs-fixer": "^3.75",
     "jetbrains/phpstorm-stubs": "*",
     "johnpbloch/wordpress": "*",
     "nikic/php-parser": "^v5.3.1",
+    "phpstan/phpstan": "^2.1",
+    "phpstan/phpstan-strict-rules": "^2.0",
+    "phpunit/phpunit": "^11.5",
     "woocommerce/action-scheduler": "*",
     "wpackagist-plugin/woocommerce": "*",
-    "yahnis-elsts/plugin-update-checker": "*",
     "wp-cli/wp-cli": "*"
   },
   "extra": {
@@ -52,9 +92,6 @@
       "sources/theme-{$name}/": [
         "type:wordpress-theme"
       ]
-    },
-    "textdomain": {
-      "wpify-custom-fields": "some-new-textdomain"
     }
   },
   "config": {

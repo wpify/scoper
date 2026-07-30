@@ -1,170 +1,116 @@
-# WPify Scoper - A scoper for WordPress plugins and themes
+# wpify/scoper
 
-Using Composer in your WordPress plugin or theme can benefit from that. But it also comes with a danger of conflicts
-with dependencies of other plugins or themes. Luckily, a great tool
-called [PHP Scoper](https://github.com/humbug/php-scoper) adds all your needed dependencies to your namespace to prevent
-conflicts. Unfortunately, the configuration is non-trivial, and for that reason, we created the Composer plugin to make
-scoping easy in WordPress projects.
+[![CI](https://github.com/wpify/scoper/actions/workflows/ci.yml/badge.svg)](https://github.com/wpify/scoper/actions/workflows/ci.yml)
+[![Packagist](https://img.shields.io/packagist/v/wpify/scoper.svg)](https://packagist.org/packages/wpify/scoper)
+[![Downloads](https://img.shields.io/packagist/dt/wpify/scoper.svg)](https://packagist.org/packages/wpify/scoper)
+[![PHP](https://img.shields.io/packagist/dependency-v/wpify/scoper/php.svg)](https://packagist.org/packages/wpify/scoper)
+[![License](https://img.shields.io/packagist/l/wpify/scoper.svg)](LICENSE)
 
-The main issue with PHP Scoper is that it also scopes global functions, constants and classes. Usually, that is what you
-want, but that also means that WordPress functions, classes and constants will be scoped. This Composer plugin solves
-that. It has an up-to-date database of all WordPress and WooCommerce symbols that we want to keep unscoped.
+A Composer plugin that moves your dependencies into a namespace of your own, so that your
+WordPress plugin or theme cannot collide with anybody else's.
+
+## The problem
+
+WordPress loads every active plugin into one PHP process, and PHP has one global namespace. Your
+plugin requires `guzzlehttp/guzzle` 7. Another plugin on the same site bundles Guzzle 6. Whichever
+autoloader registers first wins, the other plugin gets a class it does not recognise, and something
+fatals — on a site you do not control and cannot test against.
+
+[PHP Scoper](https://github.com/humbug/php-scoper) solves this by rewriting your dependencies under
+a prefix that nobody else will use. But it prefixes *everything* it can see, WordPress's own
+functions and classes included, so a scoped plugin ends up calling
+`MyPlugin\Deps\add_action()` — which does not exist.
+
+This plugin is PHP Scoper wired up correctly for WordPress. It ships a generated database of every
+symbol declared by WordPress, WooCommerce, Action Scheduler and WP-CLI, and keeps those unprefixed
+while everything else moves into your namespace.
 
 ## Requirements
 
-* wpify/scoper:**3.1**
-    * PHP 7.4 || 8.0
-* wpify/scoper:**3.2**
-    * PHP >= 8.1
+**PHP 8.2 or newer**, and Composer 2.6 or newer.
 
-## Usage
+## Quickstart
 
-1. This composer plugin is meant to be installed globally, but you can also require it as a dev dependency.
-2. The configuration requires creating `composer-deps.json` file, that has exactly same structure like `composer.json`
-   file, but serves only for scoped dependencies. Dependencies that you don't want to scope comes to `composer.json`.
-3. Add `extra.wpify-scoper.prefix` to you `composer.json`, where you can specify the namespace, where your dependencies
-   will be in. All other config options (`folder`, `globals`, `composerjson`, `composerlock`, `autorun`) are optional.
-4. The easiest way how to use the scoper on development environment is to install WPify Scoper as a dev dependency.
-   After each `composer install` or `composer update`, all the dependencies specified in `composer-deps.json` will be
-   scoped for you.
-5. Add a `config.platform` option in your composer.json and composer-deps.json. This settings will make sure that the
-   dependencies will be installed with the correct PHP version.
+Install the plugin globally, pinned to a major version:
 
-**Example of `composer.json` with its default values**
+```bash
+composer global config --no-plugins allow-plugins.wpify/scoper true
+composer global require wpify/scoper:^4.0
+```
+
+In your plugin, declare the dependencies you want scoped in `composer-deps.json` — same format as
+`composer.json`, but it holds *only* the dependencies that get prefixed:
 
 ```json
 {
+  "require": {
+    "guzzlehttp/guzzle": "^7.0"
+  },
   "config": {
     "platform": {
-      "php": "8.0.30"
-    }
-  },
-  "scripts": {
-    "wpify-scoper": "wpify-scoper"
-  },
-  "extra": {
-    "wpify-scoper": {
-      "prefix": "MyNamespaceForDeps",
-      "folder": "deps",
-      "globals": [
-        "wordpress",
-        "woocommerce", 
-        "action-scheduler", 
-        "wp-cli"
-      ],
-      "composerjson": "composer-deps.json",
-      "composerlock": "composer-deps.lock",
-      "autorun": true
+      "php": "8.2.0"
     }
   }
 }
 ```
 
-6. Option `autorun` defaults to `true` so that scoping is run automatically upon composer `update` or `install` command.
-   That is not what you want in all cases, so you can set it `false` if you need.
-   To start prefixing manually, you need to add for example the line `"wpify-scoper": "wpify-scoper"` to the "scripts" section of your composer.json. 
-   You then run the script with the command `composer wpify-scoper install` or `composer wpify-scoper update`.
+Then tell the plugin what namespace to use, in your ordinary `composer.json`:
 
-7. Scoped dependencies will be in `deps` folder of your project. You must include the scoped autoload alongside with the
-   composer autoloader.
+```json
+{
+  "config": {
+    "allow-plugins": {
+      "wpify/scoper": true
+    }
+  },
+  "extra": {
+    "wpify-scoper": {
+      "prefix": "MyPlugin\\Deps"
+    }
+  }
+}
+```
 
-8. After that, you can use your dependencies with the namespace.
+Run Composer:
 
-**Example PHP file:**
+```bash
+composer install
+```
+
+The scoped tree is written to `deps/`. Load its autoloader alongside Composer's own:
 
 ```php
 <?php
 require_once __DIR__ . '/deps/scoper-autoload.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
-new \MyNamespaceForDeps\Example\Dependency();
+$client = new \MyPlugin\Deps\GuzzleHttp\Client();
 ```
 
-## Deployment
+That class is yours alone. The other plugin's Guzzle no longer matters.
 
-### Deployment with Gitlab CI
+Full walkthrough with the verification steps: **[Getting started](docs/getting-started.md)**.
 
-To use WPify Scoper with Gitlab CI, you can add the following job to your `.gitlab-ci.yml` file:
+## Documentation
 
-```yaml
-composer:
-  stage: .pre
-  image: composer:2
-  artifacts:
-    paths:
-      - $CI_PROJECT_DIR/deps
-      - $CI_PROJECT_DIR/vendor
-    expire_in: 1 week
-  script:
-    - PATH=$(composer global config bin-dir --absolute --quiet):$PATH
-    - composer global config --no-plugins allow-plugins.wpify/scoper true
-    - composer global require wpify/scoper
-    - composer install --prefer-dist --optimize-autoloader --no-ansi --no-interaction --no-dev
-```
+| | |
+|---|---|
+| **[Getting started](docs/getting-started.md)** | Install it and scope your first dependency, start to finish. |
+| **[Configuration](docs/configuration.md)** | Every `extra.wpify-scoper` key, every command, every environment variable. |
+| **[Troubleshooting](docs/troubleshooting.md)** | Symptom, cause, fix. Start here when something is wrong. |
+| **[Deployment](docs/deployment.md)** | What to commit, CI recipes, Bedrock, multi-plugin repositories. |
+| **[Customizing php-scoper](docs/customizing.md)** | `scoper.custom.php` and patchers, for dependencies that need help. |
+| **[How it works](docs/how-it-works.md)** | The symbol lists, the pipeline, and why the scoped tree is swapped rather than written in place. |
+| **[Upgrading to 4.0](docs/upgrading-to-4.md)** | Coming from 3.2 or earlier. |
 
-### Deployment with Github Actions
+## Contributing
 
-To use WPify Scoper with Github Actions, you can add the following action:
+Bug reports, symbol-list regressions and pull requests are welcome. See
+[CONTRIBUTING.md](CONTRIBUTING.md) — in particular for what `sources/` is, why `require-dev`
+contains WordPress, and how to regenerate the symbol lists.
 
-```yaml
-name: Build vendor
+Security issues should not go in a public issue. See [SECURITY.md](SECURITY.md).
 
-jobs:
-  install:
-    runs-on: ubuntu-20.04
+## License
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Cache Composer dependencies
-        uses: actions/cache@v2
-        with:
-          path: /tmp/composer-cache
-          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
-
-      - name: Install composer
-        uses: php-actions/composer@v6
-        with:
-          php_extensions: json
-          version: 2
-          dev: no
-      - run: composer global config --no-plugins allow-plugins.wpify/scoper true
-      - run: composer global require wpify/scoper
-      - run: sudo chown -R $USER:$USER $GITHUB_WORKSPACE/vendor
-      - run: composer install --no-dev --optimize-autoloader
-
-      - name: Archive plugin artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: vendor
-          path: |
-            deps/
-            vendor/
-```
-
-## Advanced configuration
-
-PHP Scoper has plenty
-of [configuration options](https://github.com/humbug/php-scoper/blob/master/docs/configuration.md#configuration). You
-can modify this configuration array by creating `scoper.custom.php` file in root of your project. The file should
-contain `customize_php_scoper_config` function, where the first parameter is the preconfigured configuration array. Expected output is
-valid [PHP Scoper configuration array](https://github.com/humbug/php-scoper/blob/master/docs/configuration.md#configuration).
-
-**Example `scoper.custom.php` file**
-
-```php
-<?php
-
-function customize_php_scoper_config( array $config ): array {
-    $config['patchers'][] = function( string $filePath, string $prefix, string $content ): string {
-        if ( strpos( $filePath, 'guzzlehttp/guzzle/src/Handler/CurlFactory.php' ) !== false ) {
-            $content = str_replace( 'stream_for($sink)', 'Utils::streamFor()', $content );
-        }
-        
-        return $content;
-    };
-    
-    return $config;
-}
-```
+[GPL-2.0-or-later](LICENSE). Copyright © 2021–2026 Daniel Mejta and contributors.

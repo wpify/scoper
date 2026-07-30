@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Troubleshooting
+    url: https://github.com/wpify/scoper/blob/master/docs/troubleshooting.md
+    about: Symptom, cause, fix. Most reports are answered here — start with running your command again with -v.
+  - name: Upgrading from 3.2
+    url: https://github.com/wpify/scoper/blob/master/docs/upgrading-to-4.md
+    about: New errors after upgrading to 4.0 are almost certainly covered here.
+  - name: Documentation
+    url: https://github.com/wpify/scoper/tree/master/docs
+    about: Configuration reference, deployment recipes, and how the pipeline is put together.
+  - name: Report a security issue
+    url: https://github.com/wpify/scoper/security/advisories/new
+    about: Privately, never in a public issue.

@@ -1,155 +1,67 @@
-<?php
+<?php declare( strict_types=1 );
+/**
+ * Regenerates symbols/*.php from the sources in sources/ and vendor/.
+ *
+ * Run with `composer extract`. All of the logic lives in {@see SymbolExtractor}; this is the CLI
+ * entry point, so that the extraction is reachable from a test without also running it.
+ */
 
-use PhpParser\Error;
-use PhpParser\Node;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitorAbstract;
-use PhpParser\ParserFactory;
+use Composer\InstalledVersions;
+use Wpify\Scoper\Tools\SymbolExtractor;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+$root      = dirname( __DIR__ );
+$extractor = new SymbolExtractor();
+$failed    = false;
+
 /**
- * Collects every define() call in a file, no matter how deeply nested.
+ * Every tree to scan, as source directory => [output file, package the version is read from].
  *
- * WordPress declares most of its constants inside functions (see
- * wp_initial_constants() and friends in wp-includes/default-constants.php),
- * so walking only the top-level statements misses them.
- *
- * Constants are always global regardless of the namespace the define() call
- * sits in, so unlike classes and functions they're safe to collect everywhere.
+ * The second element of the value is the directory paths are made relative to before the
+ * vendor/, wp-content/ and test-suite filters are applied.
  */
-class ConstantCollector extends NodeVisitorAbstract {
-	/** @var string[] */
-	public $constants = array();
+$targets = array(
+	array( $root . '/sources/wordpress', $root . '/sources', 'wordpress.php', 'johnpbloch/wordpress' ),
+	array( $root . '/sources/plugin-woocommerce', $root . '/sources', 'woocommerce.php', 'wpackagist-plugin/woocommerce' ),
+	array( $root . '/sources/plugin-action-scheduler', $root . '/sources', 'action-scheduler.php', 'woocommerce/action-scheduler' ),
+	array( $root . '/vendor/wp-cli/wp-cli', $root . '/vendor', 'wp-cli.php', 'wp-cli/wp-cli' ),
+);
 
-	public function enterNode( Node $node ) {
-		if (
-			$node instanceof Node\Expr\FuncCall
-			&& $node->name instanceof Node\Name
-			&& strtolower( $node->name->toString() ) === 'define'
-			&& isset( $node->args[0] )
-			&& $node->args[0] instanceof Node\Arg
-			&& $node->args[0]->value instanceof Node\Scalar\String_
-		) {
-			$this->constants[] = $node->args[0]->value->value;
-		}
+foreach ( $targets as list( $directory, $relativeTo, $file, $package ) ) {
+	$output  = $root . '/symbols/' . $file;
+	$symbols = $extractor->extract( $directory, $relativeTo );
+	$errors  = $extractor->errors();
 
-		return null;
+	foreach ( $errors as $error ) {
+		fwrite( STDERR, 'wpify-scoper: ' . $error . PHP_EOL );
+
+		$failed = true;
 	}
+
+	// The list this run produced is missing whatever the failing files declared. Writing it would
+	// leave a truncated symbol table in the working tree, one commit away from scoping WordPress.
+	if ( array() !== $errors ) {
+		fwrite( STDERR, sprintf( 'wpify-scoper: %s was left untouched' . PHP_EOL, $output ) );
+
+		continue;
+	}
+
+	$version = InstalledVersions::isInstalled( $package )
+		? ( InstalledVersions::getPrettyVersion( $package ) ?? 'unknown' )
+		: 'not installed';
+
+	$rendered = $extractor->render( $symbols, $package, $version, date( 'Y-m-d' ) );
+
+	if ( false === file_put_contents( $output, $rendered ) ) {
+		fwrite( STDERR, sprintf( 'wpify-scoper: cannot write %s' . PHP_EOL, $output ) );
+
+		exit( 1 );
+	}
+
+	printf( ">>> %d symbols exported to %s\n", SymbolExtractor::count( $symbols ), $output );
 }
 
-function get_parser() {
-	static $parser;
-
-	if ( empty( $parser ) ) {
-		$parser = ( new ParserFactory() )->createForVersion( \PhpParser\PhpVersion::fromString("8.1.0") );
-	}
-
-	return $parser;
-}
-
-function resolve( Node $node ) {
-	if ( $node instanceof Node\Stmt\Namespace_ ) {
-		$namespace = join( '\\', $node->name->getParts() );
-
-		return array( 'exclude-namespaces' => array( $namespace ) );
-	} elseif ( $node instanceof Node\Stmt\Class_ ) {
-		return array( 'exclude-classes' => array( $node->name->name ) );
-	} elseif ( $node instanceof Node\Stmt\Function_ ) {
-		return array( 'exclude-functions' => array( $node->name->name ) );
-	} elseif ( $node instanceof Node\Stmt\If_ ) {
-		$symbols = array();
-
-		foreach ( $node->stmts as $subnode ) {
-			foreach ( resolve( $subnode ) as $key => $result ) {
-				$symbols[ $key ] = array_merge( $symbols[ $key ] ?? array(), $result );
-			}
-		}
-
-		return $symbols;
-	} elseif ( $node instanceof Node\Stmt\Trait_ ) {
-		return array( 'exclude-classes' => array( $node->name->name ) );
-	} elseif ( $node instanceof Node\Stmt\Interface_ ) {
-		return array( 'exclude-classes' => array( $node->name->name ) );
-	}
-
-	// Constants are handled by ConstantCollector, which walks the whole AST.
-	return array();
-}
-
-function get_files( string $folder, string $root ) {
-	$files  = array();
-	$folder = realpath( $folder );
-
-	if ( file_exists( $folder ) ) {
-		$found = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator( $folder ),
-			RecursiveIteratorIterator::SELF_FIRST
-		);
-
-		foreach ( $found as $file ) {
-			$real_path       = $file->getRealPath();
-			$normalized_path = str_replace( realpath( __DIR__ . '/../' . $root ) . '/', '', $real_path );
-
-			if ( preg_match( "/\/vendor\//i", $normalized_path ) || preg_match( "/\/wp-content\//i", $normalized_path ) ) {
-				continue;
-			}
-
-			if ( preg_match( "/\.php$/i", $real_path ) ) {
-				$files[] = $real_path;
-			}
-		}
-	}
-
-	return $files;
-}
-
-function extract_symbols( string $where, string $root, string $result ) {
-	$files   = get_files( $where, $root );
-	$symbols = array();
-
-	foreach ( $files as $file ) {
-		try {
-			$ast = get_parser()->parse( file_get_contents( $file ) );
-
-			foreach ( $ast as $node ) {
-				$symbols = array_merge_recursive( $symbols, resolve( $node ) );
-			}
-
-			$collector = new ConstantCollector();
-			$traverser = new NodeTraverser();
-			$traverser->addVisitor( $collector );
-			$traverser->traverse( $ast );
-
-			if ( ! empty( $collector->constants ) ) {
-				$symbols['exclude-constants'] = array_merge(
-					$symbols['exclude-constants'] ?? array(),
-					$collector->constants,
-				);
-			}
-		} catch ( Error $error ) {
-			echo "Parse error: {$error->getMessage()} in {$file}\n";
-		}
-	}
-
-	$count = 0;
-
-	foreach ( $symbols as $exclusion => $values ) {
-		$symbols[ $exclusion ] = array_unique( $values );
-		$count                 += count( $values );
-	}
-
-	$content = join( array(
-		"<?php return " . var_export( $symbols, true ) . ';',
-	) );
-
-	file_put_contents( $result, $content );
-
-	echo ">>> " . $count . " symbols exported to " . $result . "\n";
-}
-
-extract_symbols( __DIR__ . '/../sources/wordpress', 'sources', realpath( __DIR__ . '/../symbols' ) . '/wordpress.php' );
-extract_symbols( __DIR__ . '/../sources/plugin-woocommerce', 'sources', realpath( __DIR__ . '/../symbols' ) . '/woocommerce.php' );
-//extract_symbols( __DIR__ . '/../vendor/yahnis-elsts/plugin-update-checker', 'vendor', realpath( __DIR__ . '/../symbols' ) . '/plugin-update-checker.php' );
-extract_symbols( __DIR__ . '/../sources/plugin-action-scheduler', 'sources', realpath( __DIR__ . '/../symbols' ) . '/action-scheduler.php' );
-extract_symbols( __DIR__ . '/../vendor/wp-cli/wp-cli',  'vendor', realpath( __DIR__ . '/../symbols' ) . '/wp-cli.php' );
+// A parse failure silently truncates a symbol list, and a truncated WordPress list means WordPress
+// functions get scoped - the worst failure mode this project has. Never exit 0 on one.
+exit( $failed ? 1 : 0 );

@@ -1,306 +1,147 @@
-<?php
+<?php declare( strict_types=1 );
 
 namespace Wpify\Scoper;
 
 use Composer\Composer;
-use Composer\Console\Application;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
-use Composer\Plugin\Capability\CommandProvider;
+use Composer\Plugin\Capability\CommandProvider as ComposerCommandProvider;
+use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\ConsoleOutput;
+use RuntimeException;
 
-class Plugin implements PluginInterface, EventSubscriberInterface {
+class Plugin implements PluginInterface, Capable, EventSubscriberInterface {
 
+	/**
+	 * Pseudo-event names accepted by {@see self::execute()}.
+	 *
+	 * Kept as plain strings rather than a backed enum: they are passed to
+	 * `Composer\Script\Event::__construct()`, whose `$name` is typed `string`, and bin/wpify-scoper
+	 * has always exposed them that way. An enum would be a silent BC break for anything outside
+	 * this repository that constructs such an event.
+	 *
+	 * @deprecated Use `composer wpify-scoper install|update [--no-dev]` instead.
+	 */
 	public const SCOPER_INSTALL_CMD        = 'scoper-install-cmd';
 	public const SCOPER_INSTALL_NO_DEV_CMD = 'scoper-install-no-dev-cmd';
 	public const SCOPER_UPDATE_CMD         = 'scoper-update-cmd';
 	public const SCOPER_UPDATE_NO_DEV_CMD  = 'scoper-update-no-dev-cmd';
 
-	protected $composer;
-	protected $io;
+	protected ?Composer $composer = null;
 
-	/** @var string */
-	private $folder;
+	protected ?IOInterface $io = null;
 
-	/** @var string */
-	private $prefix;
+	private ?Configuration $configuration = null;
 
-	/** @var array */
-	private $globals;
+	/**
+	 * The message of the configuration error, when there is one.
+	 *
+	 * Composer does not guard `activate()`, so an exception thrown from there aborts every command
+	 * in the project - including `composer require`, `composer remove` and everything else the user
+	 * would reach for to fix the configuration. The error is therefore carried until the pipeline is
+	 * actually asked to run, which is where it is actionable.
+	 */
+	private ?string $configurationError = null;
 
-	/** @var string */
-	private $composerjson;
-
-	/** @var string */
-	private $composerlock;
-
-	/** @var string */
-	private $tempDir;
-
-	public static function getSubscribedEvents() {
+	/**
+	 * @return array<string, string>
+	 */
+	public static function getSubscribedEvents(): array {
 		return array(
 			ScriptEvents::POST_INSTALL_CMD => 'execute',
 			ScriptEvents::POST_UPDATE_CMD  => 'execute',
 		);
 	}
 
-	public function activate( Composer $composer, IOInterface $io ) {
+	/**
+	 * @return array<class-string, class-string>
+	 */
+	public function getCapabilities(): array {
+		return array(
+			ComposerCommandProvider::class => CommandProvider::class,
+		);
+	}
+
+	public function activate( Composer $composer, IOInterface $io ): void {
 		$this->composer = $composer;
 		$this->io       = $io;
-		$extra          = $composer->getPackage()->getExtra();
-		$prefix         = null;
-		$configValues   = array(
-			'folder'       => $this->path( getcwd(), 'deps' ),
-			'temp'         => $this->path( getcwd(), 'tmp-' . substr( str_shuffle( md5( microtime() ) ), 0, 10 ) ),
-			'prefix'       => $prefix,
-			'globals'      => array( 'wordpress', 'woocommerce', 'action-scheduler', 'wp-cli' ),
-			'composerjson' => 'composer-deps.json',
-			'composerlock' => 'composer-deps.lock',
-		);
 
-		if ( ! empty( $extra['wpify-scoper']['folder'] ) ) {
-			$configValues['folder'] = $this->path( getcwd(), $extra['wpify-scoper']['folder'] );
+		try {
+			$this->configuration = Configuration::fromComposer( $composer );
+		} catch ( RuntimeException $exception ) {
+			$this->configurationError = $exception->getMessage();
+
+			return;
 		}
 
-		if ( ! empty( $extra['wpify-scoper']['composerjson'] ) ) {
-			$configValues['composerjson'] = $extra['wpify-scoper']['composerjson'];
-			$configValues['composerlock'] = preg_replace( '/\.json$/', '.lock', $extra['wpify-scoper']['composerjson'] );
+		if ( null === $this->configuration || ! $io->isVerbose() ) {
+			return;
 		}
 
-		if ( ! empty( $extra['wpify-scoper']['composerlock'] ) ) {
-			$configValues['composerlock'] = $extra['wpify-scoper']['composerlock'];
-		}
-
-		if ( ! empty( $extra['wpify-scoper']['prefix'] ) ) {
-			$configValues['prefix'] = $extra['wpify-scoper']['prefix'];
-		}
-
-		if ( ! empty( $extra['wpify-scoper']['globals'] ) && is_array( $extra['wpify-scoper']['globals'] ) ) {
-			$configValues['globals'] = $extra['wpify-scoper']['globals'];
-		}
-
-		if ( ! empty( $extra['wpify-scoper']['temp'] ) ) {
-			$configValues['temp'] = $this->path( getcwd(), $extra['wpify-scoper']['temp'] );
-		}
-
-		$this->folder       = $configValues['folder'];
-		$this->prefix       = $configValues['prefix'];
-		$this->globals      = $configValues['globals'];
-		$this->tempDir      = $configValues['temp'];
-		$this->composerjson = $configValues['composerjson'];
-		$this->composerlock = $configValues['composerlock'];
+		$io->write( sprintf(
+			'<info>wpify-scoper:</info> prefix "%s", folder "%s", %s / %s, temp "%s"',
+			$this->configuration->prefix,
+			$this->configuration->folder,
+			$this->configuration->composerJson,
+			$this->configuration->composerLock,
+			$this->configuration->tempDir
+		) );
 	}
 
-	public function deactivate( Composer $composer, IOInterface $io ) {
+	public function deactivate( Composer $composer, IOInterface $io ): void {
 	}
 
-	public function uninstall( Composer $composer, IOInterface $io ) {
+	public function uninstall( Composer $composer, IOInterface $io ): void {
 	}
 
-	public function getCapabilities() {
-		return array(
-			CommandProvider::class => self::class,
-		);
-	}
-
-	public function path( ...$parts ) {
-		$path = join( DIRECTORY_SEPARATOR, $parts );
+	/**
+	 * Joins path segments.
+	 *
+	 * @deprecated Retained only because it has always been public.
+	 */
+	public function path( string ...$parts ): string {
+		$path = implode( DIRECTORY_SEPARATOR, $parts );
 
 		return str_replace( DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR, $path );
 	}
 
-	public function execute( Event $event ) {
-		$extra = $event->getComposer()->getPackage()->getExtra();
+	public function execute( Event $event ): void {
+		if ( null !== $this->configurationError ) {
+			throw new RuntimeException( $this->configurationError );
+		}
 
-		if (
-			isset( $extra['wpify-scoper']['autorun'] ) &&
-			$extra['wpify-scoper']['autorun'] === false &&
-			( $event->getName() === ScriptEvents::POST_UPDATE_CMD || $event->getName() === ScriptEvents::POST_INSTALL_CMD )
-		) {
+		if ( null === $this->configuration || null === $this->io ) {
 			return;
 		}
 
-		if ( ! empty( $this->prefix ) ) {
-			$source           = $this->path( $this->tempDir, 'source' );
-			$destination      = $this->path( $this->tempDir, 'destination' );
-			$scoperConfig     = $this->createScoperConfig( $this->tempDir, $source, $destination );
-			$composerJsonPath = $this->path( $source, 'composer.json' );
-			$composerLockPath = $this->path( $source, 'composer.lock' );
+		$name = $event->getName();
 
-			if ( file_exists( $this->path( getcwd(), $this->composerjson ) ) ) {
-				$composerJson = json_decode( file_get_contents( $this->path( getcwd(), $this->composerjson ) ), false );
-			} else {
-				$composerJson = (object) array(
-					'require' => (object) array(),
-					'scripts' => (object) array(),
-				);
-				$this->createJson( $this->path( getcwd(), $this->composerjson ), $composerJson );
-			}
+		$isScriptEvent = ScriptEvents::POST_INSTALL_CMD === $name || ScriptEvents::POST_UPDATE_CMD === $name;
 
-			if ( empty( $composerJson->scripts ) ) {
-				$composerJson->scripts = (object) array();
-			}
-
-			$postinstall     = file_get_contents( __DIR__ . '/../scripts/postinstall.php' );
-			$postinstall     = str_replace( '%%source%%', $source, $postinstall );
-			$postinstall     = str_replace( '%%destination%%', $destination, $postinstall );
-			$postinstall     = str_replace( '%%cwd%%', getcwd(), $postinstall );
-			$postinstall     = str_replace( '%%composer_lock%%', $this->composerlock, $postinstall );
-			$postinstall     = str_replace( '%%deps%%', $this->folder, $postinstall );
-			$postinstall     = str_replace( '%%temp%%', $this->tempDir, $postinstall );
-			$postinstall     = str_replace( '%%prefix%%', $this->prefix, $postinstall );
-			$postinstallPath = $this->path( $this->tempDir, 'postinstall.php' );
-			file_put_contents( $postinstallPath, $postinstall );
-
-			$scriptName = $event->getName();
-			if ( $event->getName() === self::SCOPER_UPDATE_CMD || $event->getName() === self::SCOPER_UPDATE_NO_DEV_CMD ) {
-				$scriptName = ScriptEvents::POST_UPDATE_CMD;
-			}
-			if ( $event->getName() === self::SCOPER_INSTALL_CMD || $event->getName() === self::SCOPER_INSTALL_NO_DEV_CMD ) {
-				$scriptName = ScriptEvents::POST_INSTALL_CMD;
-			}
-
-			$phpscoper = realpath( __DIR__ . '/../../php-scoper/bin/php-scoper.phar' );
-
-			$composerJson->scripts->{$scriptName} = array(
-				$phpscoper . ' add-prefix --output-dir="' . $destination . '" --force --config="' . $scoperConfig . '"',
-				'composer dump-autoload --working-dir="' . $destination . '" --optimize',
-				'php "' . $postinstallPath . '"',
-			);
-
-			$this->createJson( $composerJsonPath, $composerJson );
-
-			if ( file_exists( $this->path( getcwd(), $this->composerlock ) ) ) {
-				copy( $this->path( getcwd(), $this->composerlock ), $composerLockPath );
-			}
-
-			$command = 'install';
-
-			if (
-				$event->getName() === ScriptEvents::POST_UPDATE_CMD ||
-				$event->getName() === self::SCOPER_UPDATE_CMD ||
-				$event->getName() === self::SCOPER_UPDATE_NO_DEV_CMD
-			) {
-				$command = 'update';
-			}
-
-			$useDevDependencies = true;
-
-			if ( $event->getName() === self::SCOPER_UPDATE_NO_DEV_CMD || $event->getName() === self::SCOPER_INSTALL_NO_DEV_CMD ) {
-				$useDevDependencies = false;
-			}
-
-			$this->runInstall( $source, $command, $useDevDependencies );
-		}
-	}
-
-	private function createScoperConfig( string $path, string $source, string $destination ) {
-		$inc_path    = $this->createPath( array( 'config', 'scoper.inc.php' ) );
-		$config_path = $this->createPath( array( 'config', 'scoper.config.php' ) );
-		$custom_path = $this->createPath( array( 'scoper.custom.php' ), true );
-		$final_path  = $this->path( $path, 'scoper.inc.php' );
-		$symbols_dir = $this->createPath( [ 'symbols' ] );
-
-		$this->createFolder( $path );
-		$this->createFolder( $source );
-		$this->createFolder( $destination );
-
-		$config = require_once $config_path;
-
-		if ( ! is_array( $config ) ) {
-			exit;
+		if ( $isScriptEvent && ! $this->configuration->autorun ) {
+			return;
 		}
 
-		$config['prefix']                  = $this->prefix;
-		$config['source']                  = $source;
-		$config['destination']             = $destination;
-		$config['exclude-constants']       = array( 'NULL', 'TRUE', 'FALSE' );
+		// The dev mode of the outer run decides whether the scoped set gets its dev dependencies;
+		// the pseudo-events carry it in their name, because the Event they are wrapped in is
+		// fabricated by bin/wpify-scoper and always reports dev mode as off.
+		list( $command, $useDevDependencies ) = match ( $name ) {
+			self::SCOPER_INSTALL_CMD        => array( 'install', true ),
+			self::SCOPER_INSTALL_NO_DEV_CMD => array( 'install', false ),
+			self::SCOPER_UPDATE_CMD         => array( 'update', true ),
+			self::SCOPER_UPDATE_NO_DEV_CMD  => array( 'update', false ),
+			ScriptEvents::POST_UPDATE_CMD   => array( 'update', $event->isDevMode() ),
+			default                         => array( 'install', $event->isDevMode() ),
+		};
 
-		if ( in_array( 'action-scheduler', $this->globals ) ) {
-			$config = array_merge_recursive(
-				$config,
-				require $this->path( $symbols_dir, 'action-scheduler.php' ),
-			);
-		}
-
-		if ( in_array( 'plugin-update-checker', $this->globals ) ) {
-			$config = array_merge_recursive(
-				$config,
-				require $this->path( $symbols_dir, 'plugin-update-checker.php' ),
-			);
-		}
-
-		if ( in_array( 'woocommerce', $this->globals ) ) {
-			$config = array_merge_recursive(
-				$config,
-				require $this->path( $symbols_dir, 'woocommerce.php' ),
-			);
-		}
-
-		if ( in_array( 'wordpress', $this->globals ) ) {
-			$config = array_merge_recursive(
-				$config,
-				require $this->path( $symbols_dir, 'wordpress.php' ),
-			);
-		}
-
-		if ( in_array( 'wp-cli', $this->globals ) ) {
-			$config = array_merge_recursive(
-				$config,
-				require $this->path( $symbols_dir, 'wp-cli.php' ),
-			);
-		}
-
-		if ( file_exists( $custom_path ) ) {
-			copy( $custom_path, $this->path( $path, 'scoper.custom.php' ) );
-		}
-
-		copy( $inc_path, $this->path( $path, 'scoper.inc.php' ) );
-		file_put_contents( $this->path( $path, 'scoper.config.php' ), '<?php return ' . var_export( $config, true ) . ';' );
-
-		return $final_path;
-	}
-
-	private function createPath( array $parts, bool $in_root = false ) {
-		$vendor = strpos( dirname( __DIR__ ), 'vendor' . DIRECTORY_SEPARATOR . 'wpify' . DIRECTORY_SEPARATOR . 'scoper' );
-
-		if ( ! $in_root || ! is_int( $vendor ) ) {
-			return dirname( __DIR__ ) . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
-		}
-
-		return getcwd() . DIRECTORY_SEPARATOR . join( DIRECTORY_SEPARATOR, $parts );
-	}
-
-	private function createFolder( string $path ) {
-		if ( ! file_exists( $path ) ) {
-			mkdir( $path, 0755, true );
-		}
-	}
-
-	private function createJson( string $path, $content ) {
-		$this->createFolder( dirname( $path ) );
-		$json = json_encode( $content, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-		file_put_contents( $path, $json );
-	}
-
-	private function runInstall( string $path, string $command = 'install', bool $useDevDependencies = true ) {
-		$output      = new ConsoleOutput();
-		$application = new Application();
-
-		return $application->run(
-			new ArrayInput(
-				array(
-					'command'               => $command,
-					'--working-dir'         => $path,
-					'--no-dev'              => ! $useDevDependencies,
-					'--optimize-autoloader' => true,
-				),
-			),
-			$output,
-		);
+		( new Scoper(
+			$this->configuration,
+			$this->io,
+			new ProcessComposerRunner( $this->io ),
+			null,
+			UpdateNotifier::create( $event->getComposer(), $this->io, $this->configuration )
+		) )->run( $command, $useDevDependencies );
 	}
 }

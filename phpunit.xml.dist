@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         defaultTestSuite="unit"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="depends,defects"
+         failOnRisky="true"
+         failOnWarning="true"
+         beStrictAboutOutputDuringTests="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         displayDetailsOnTestsThatTriggerErrors="true"
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true">
+
+    <!--
+        The integration suite spawns Composer and php-scoper, so it is never what a bare
+        `vendor/bin/phpunit` runs. Ask for it explicitly: `composer test:integration`.
+    -->
+    <testsuites>
+        <!-- Pure logic plus the golden-file extractor test: no network, no subprocesses. -->
+        <testsuite name="unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+
+        <!-- End-to-end scoping of an offline fixture. Minutes, not milliseconds. -->
+        <testsuite name="integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory>src</directory>
+            <directory>scripts</directory>
+        </include>
+        <exclude>
+            <directory>symbols</directory>
+        </exclude>
+    </source>
+</phpunit>

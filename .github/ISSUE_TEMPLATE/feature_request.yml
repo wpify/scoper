@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest a change to how the scoper works.
+labels: [ enhancement ]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that you cannot do today? Describe the situation, not the solution you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you are doing now
+      description: A `scoper.custom.php` patcher, a post-install script, manual edits — whatever the current workaround is. If there is none, say so.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: output-impact
+    attributes:
+      label: Impact on generated output
+      options:
+        - label: I understand that anything changing what lands in `deps/` is at least a minor release, because consumers cannot see that their scoped tree changed until something fatals in production.
+          required: true

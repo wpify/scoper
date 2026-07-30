@@ -1,0 +1,27 @@
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+
+parameters:
+    level: 9
+    phpVersion:
+        min: 80200
+        max: 80599
+    paths:
+        - src
+        - scripts
+        - config
+    excludePaths:
+        # 300 KB of generated symbol tables - nothing to analyse, and analysing them is slow.
+        - symbols/*
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        # config/scoper.inc.php runs inside the php-scoper phar, which ships its own prefixed
+        # copies of the Symfony Finder. The class genuinely does not exist in this project.
+        -
+            message: '#Isolated\\Symfony\\Component\\Finder\\Finder#'
+            path: config/scoper.inc.php
+        # customize_php_scoper_config() is the user-supplied hook from scoper.custom.php; the
+        # fallback definition right above the call is what makes it always defined.
+        -
+            message: '#Function customize_php_scoper_config#'
+            path: config/scoper.inc.php
