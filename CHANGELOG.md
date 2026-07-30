@@ -8,7 +8,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Releases before 4.0.0 have no entries here; the project had no changelog at the time. See the
 [commit history](https://github.com/wpify/scoper/commits/master) for those.
 
-## [Unreleased]
+## [4.0.0] - 2026-07-30
 
 The first release with a changelog. It is a major version because the PHP requirement rises and
 two long-standing behaviours change, but nothing in a correctly configured project needs editing
@@ -153,4 +153,5 @@ result before shipping it** — several of the fixes below alter which symbols e
 - The `Plugin::SCOPER_*_CMD` constants and `Plugin::path()`, kept only because they have always
   been public.
 
-[Unreleased]: https://github.com/wpify/scoper/compare/3.2.21...HEAD
+[Unreleased]: https://github.com/wpify/scoper/compare/4.0.0...HEAD
+[4.0.0]: https://github.com/wpify/scoper/compare/3.2.21...4.0.0
