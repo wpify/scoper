@@ -8,10 +8,12 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Wpify\Scoper\Action;
 use Wpify\Scoper\Configuration;
 use Wpify\Scoper\PluginPackage;
 use Wpify\Scoper\ProcessComposerRunner;
 use Wpify\Scoper\Scoper;
+use Wpify\Scoper\ScoperRequest;
 
 /**
  * Runs the whole pipeline against the offline fixture in tests/fixtures/e2e and asserts on the
@@ -43,7 +45,8 @@ final class ScopingPipelineTest extends TestCase {
 		$config = Configuration::fromExtra( $manifest['extra'], self::$root, self::$root . '/vendor' );
 		$io     = new BufferIO();
 
-		$exitCode = ( new Scoper( $config, $io, new ProcessComposerRunner( $io ) ) )->run( 'update', true );
+		$exitCode = ( new Scoper( $config, $io, new ProcessComposerRunner( $io ) ) )
+			->run( ScoperRequest::forAction( Action::Update, true ) );
 
 		self::$output = $io->getOutput();
 
@@ -295,8 +298,12 @@ final class ScopingPipelineTest extends TestCase {
 		self::assertFileDoesNotExist( self::$root . '/deps-real/scoper-autoload.php' );
 	}
 
-	// --- the manifest is only ever read --------------------------------------------------------
+	// --- a scoping run never rewrites the manifest ----------------------------------------------
 
+	/**
+	 * Only `require` and `remove` edit the scoped manifest, and only through a delta - see
+	 * {@see ManifestEditingTest}. An `install` or `update` run must leave it alone entirely.
+	 */
 	public function test_the_scoped_manifest_is_not_rewritten(): void {
 		$manifest = (string) file_get_contents( self::$root . '/composer-deps.json' );
 

@@ -13,20 +13,74 @@ use RuntimeException;
  */
 final class ScopedTreeInstaller {
 
+	/**
+	 * Whether the scoped manifest has already been written.
+	 *
+	 * Read by {@see Scoper} when a run fails, so that it can tell the user whether their
+	 * composer-deps.json was left alone - which it is for every failure up to and including
+	 * php-scoper, and is not once the swap has started.
+	 */
+	private bool $publishedManifest = false;
+
 	public function __construct(
 		private readonly Configuration $config,
 		private readonly IOInterface $io,
 	) {
 	}
 
+	public function hasPublishedManifest(): bool {
+		return $this->publishedManifest;
+	}
+
 	/**
-	 * @param string $destination The php-scoper output directory.
+	 * @param string             $destination The php-scoper output directory.
+	 * @param ManifestDelta|null $delta       The scoped dependencies a require/remove run changed,
+	 *                                        null for install and update.
 	 */
-	public function install( string $destination ): void {
+	public function install( string $destination, ?ManifestDelta $delta = null ): void {
 		$this->fixAutoloadStatic( $destination );
 		$this->neutraliseExposedSymbols( $destination );
+		$this->publishManifest( $delta );
 		$this->publishLock( $destination );
 		$this->swapDepsFolder( $destination );
+	}
+
+	/**
+	 * Writes the delta of a require/remove run into the scoped manifest.
+	 *
+	 * Deliberately paired with {@see self::publishLock()}: the manifest and the lock describe the
+	 * same dependency set, and publishing one without the other is how a project ends up with a
+	 * lock that satisfies constraints its manifest does not declare.
+	 */
+	private function publishManifest( ?ManifestDelta $delta ): void {
+		if ( null === $delta || $delta->isEmpty() ) {
+			return;
+		}
+
+		$path     = $this->config->composerJson;
+		$contents = $this->read( $path );
+
+		$this->write( $path, $delta->applyTo( $path, $contents, $this->sortsPackages( $contents ) ) );
+
+		$this->publishedManifest = true;
+
+		$this->io->write( sprintf( '<info>wpify-scoper:</info> %s: %s', $path, $delta->describe() ) );
+	}
+
+	/**
+	 * The scoped manifest's own `config.sort-packages`.
+	 *
+	 * Read from the manifest being edited rather than from the root composer.json: it governs how
+	 * that file wants its own require block ordered, and the two projects can disagree.
+	 */
+	private function sortsPackages( string $manifest ): bool {
+		$decoded = json_decode( $manifest, true );
+
+		if ( ! is_array( $decoded ) || ! is_array( $decoded['config'] ?? null ) ) {
+			return false;
+		}
+
+		return true === ( $decoded['config']['sort-packages'] ?? null );
 	}
 
 	/**

@@ -60,6 +60,10 @@ WordPress request alongside another plugin.
 runs. Composer resolves against it, so setting it lower than production is how you end up with a
 scoped tree that fatals on the server.
 
+> You write this file by hand once. After the scoper is configured you can add and remove
+> dependencies with `composer wpify-scoper require` and `composer wpify-scoper remove` instead —
+> see [step 9](#9-add-and-remove-dependencies-later).
+
 ## 4. Configure the prefix
 
 In `composer.json`:
@@ -181,6 +185,36 @@ dependencies live somewhere private.
 - `tmp-*` — never. Always ignore it.
 
 [Deployment](deployment.md) covers the trade-off properly.
+
+## 9. Add and remove dependencies later
+
+You wrote `composer-deps.json` by hand in step 3 because there was nothing configured yet to write
+it for you. Now that there is, you do not have to do it again:
+
+```bash
+composer wpify-scoper require monolog/monolog
+composer wpify-scoper remove guzzlehttp/guzzle
+```
+
+Each one resolves the dependency, updates `composer-deps.json` and `composer-deps.lock`, and
+rebuilds `deps/`. There is no second command to run afterwards.
+
+Two things worth knowing:
+
+- **The constraint is resolved against `composer-deps.json`,** using the `repositories` and the
+  `config.platform.php` *it* declares. That is why `monolog/monolog` with no version gets a
+  constraint that will actually install on your site rather than on your laptop.
+- **Your file is edited surgically.** Only the entry you named changes; your key order, your
+  formatting and every other block are left exactly as they were. And nothing is written at all
+  until the run has succeeded, so a constraint that cannot be satisfied leaves you where you
+  started.
+
+Use `--dev` to put the dependency in `require-dev`, and `--dry-run` to see what Composer would
+resolve without writing anything. [Configuration](configuration.md#adding-and-removing-scoped-dependencies)
+has the full list.
+
+Note that these are for your **scoped** dependencies only. Plain `composer require` still manages
+`composer.json` — the split from step 3 does not go away.
 
 ## Where to go next
 

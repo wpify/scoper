@@ -153,10 +153,17 @@ never meant "scope everything".
 The manifest describing the dependencies to scope. Relative to the project root; absolute paths
 accepted.
 
-It is **only ever read**. Before 4.0 the run rewrote it on every invocation with a `scripts` block
-full of absolute host paths, clobbering anything you had written there.
+**A scoping run never rewrites it.** Before 4.0 the run rewrote it on every invocation with a
+`scripts` block full of absolute host paths, clobbering anything you had written there.
 
-If the file does not exist, an empty one (`{"require": {}}`) is created for you.
+The only things that edit it are [`require` and `remove`](#adding-and-removing-scoped-dependencies),
+and they edit it surgically: the entries you named, in `require` or `require-dev`, and nothing else.
+Your key order, your formatting and every other block come out byte for byte as they went in. The
+edit lands only after the scoping run has succeeded, at the same moment as `composerlock`, so the
+manifest and the lock never disagree.
+
+If the file does not exist, an empty one (`{"require": {}}`) is created for you — so
+`composer wpify-scoper require guzzlehttp/guzzle` works in a project that has no scoped manifest yet.
 
 ### `composerlock`
 
@@ -219,16 +226,61 @@ through to the nested install untouched — `require`, `require-dev`, `repositor
 ## Commands
 
 ```bash
-composer wpify-scoper install    # install the locked scoped dependency set
-composer wpify-scoper update     # re-resolve it and rewrite composer-deps.lock
-composer wpify-scoper install --no-dev
+composer wpify-scoper install                      # install the locked scoped dependency set
+composer wpify-scoper update                       # re-resolve it and rewrite composer-deps.lock
+composer wpify-scoper require guzzlehttp/guzzle    # add a scoped dependency and re-scope
+composer wpify-scoper remove guzzlehttp/guzzle     # drop one and re-scope
 ```
 
 The mapping is the one you already know from Composer: `install` honours `composer-deps.lock`,
 `update` ignores it and writes a new one.
 
-`--no-dev` skips the `require-dev` block of your **scoped** manifest. That is what you want for a
-release build.
+Each flag belongs to the actions it is documented for, and using it anywhere else is an error
+rather than a silent no-op:
+
+| Flag | Actions | Meaning |
+|---|---|---|
+| `--no-dev` | `install`, `update` | Skip the `require-dev` block of your **scoped** manifest. What you want for a release build. |
+| `--dev` | `require`, `remove` | Act on `require-dev` instead of `require`. |
+| `-W`, `--with-all-dependencies` | `require`, `remove` | Also update transitive dependencies that are already locked. Reach for this when a `require` fails because the new package conflicts with something in `composer-deps.lock`. |
+| `--fixed` | `require` | Pin the exact resolved version (`7.9.2`) instead of a caret constraint (`^7.9`). |
+| `--dry-run` | `require`, `remove` | Resolve and report, write nothing. |
+
+### Adding and removing scoped dependencies
+
+```bash
+composer wpify-scoper require guzzlehttp/guzzle
+composer wpify-scoper require guzzlehttp/guzzle:^7.0 monolog/monolog --dev
+composer wpify-scoper remove guzzlehttp/guzzle
+```
+
+When one of these returns successfully, three things have happened: the constraint is in
+`composer-deps.json`, `composer-deps.lock` has been rewritten, and the scoped tree in `deps/` has
+been rebuilt. There is nothing else to run.
+
+Resolution happens against your **scoped** manifest, not your root one — so a bare package name is
+resolved using the `repositories` and the `config.platform.php` that `composer-deps.json` declares,
+which is the only answer that can be right.
+
+Your manifest is not touched until the nested resolution has succeeded, so a constraint that cannot
+be satisfied leaves the file exactly as it was. There is nothing to undo.
+
+If you `require` a package that is also in your root `composer.json`, you get a warning and the run
+continues:
+
+```
+wpify-scoper: guzzlehttp/guzzle is also required in composer.json, so an unscoped copy will be
+autoloaded from vendor/ alongside the scoped one. Run "composer remove guzzlehttp/guzzle" unless
+that is deliberate.
+```
+
+Take it seriously. Two copies of a package, one scoped and one not, means the unprefixed class name
+is back in the global namespace — the exact collision this tool exists to prevent. It is a warning
+rather than an error because declaring both is occasionally deliberate: a dev-only tool in the root,
+the scoped copy for runtime.
+
+`--dry-run` reports what **Composer** would resolve. It says nothing about whether php-scoper would
+then succeed, because a dry run installs nothing for php-scoper to look at.
 
 ### The deprecated binary
 
@@ -236,9 +288,10 @@ release build.
 vendor/bin/wpify-scoper install
 ```
 
-Still works, prints a deprecation notice on every run, and will be removed. It needs `composer` on
-`PATH` (or [`COMPOSER_BINARY`](#environment-variables) set) where the Composer command does not.
-Use `composer wpify-scoper` instead.
+Still works for `install` and `update`, prints a deprecation notice on every run, and will be
+removed. `require` and `remove` are **not** available there — they exist only on
+`composer wpify-scoper`. The binary needs `composer` on `PATH` (or
+[`COMPOSER_BINARY`](#environment-variables) set) where the Composer command does not.
 
 ## Environment variables
 

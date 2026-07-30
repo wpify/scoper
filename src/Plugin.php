@@ -127,21 +127,24 @@ class Plugin implements PluginInterface, Capable, EventSubscriberInterface {
 		// The dev mode of the outer run decides whether the scoped set gets its dev dependencies;
 		// the pseudo-events carry it in their name, because the Event they are wrapped in is
 		// fabricated by bin/wpify-scoper and always reports dev mode as off.
-		list( $command, $useDevDependencies ) = match ( $name ) {
-			self::SCOPER_INSTALL_CMD        => array( 'install', true ),
-			self::SCOPER_INSTALL_NO_DEV_CMD => array( 'install', false ),
-			self::SCOPER_UPDATE_CMD         => array( 'update', true ),
-			self::SCOPER_UPDATE_NO_DEV_CMD  => array( 'update', false ),
-			ScriptEvents::POST_UPDATE_CMD   => array( 'update', $event->isDevMode() ),
-			default                         => array( 'install', $event->isDevMode() ),
+		list( $action, $useDevDependencies ) = match ( $name ) {
+			self::SCOPER_INSTALL_CMD        => array( Action::Install, true ),
+			self::SCOPER_INSTALL_NO_DEV_CMD => array( Action::Install, false ),
+			self::SCOPER_UPDATE_CMD         => array( Action::Update, true ),
+			self::SCOPER_UPDATE_NO_DEV_CMD  => array( Action::Update, false ),
+			ScriptEvents::POST_UPDATE_CMD   => array( Action::Update, $event->isDevMode() ),
+			default                         => array( Action::Install, $event->isDevMode() ),
 		};
 
+		// require and remove are deliberately not reachable from here: they need package names,
+		// which neither a script event nor a pseudo-event carries, and they live only on
+		// `composer wpify-scoper`.
 		( new Scoper(
 			$this->configuration,
 			$this->io,
 			new ProcessComposerRunner( $this->io ),
 			null,
 			UpdateNotifier::create( $event->getComposer(), $this->io, $this->configuration )
-		) )->run( $command, $useDevDependencies );
+		) )->run( ScoperRequest::forAction( $action, $useDevDependencies ) );
 	}
 }

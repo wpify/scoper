@@ -79,9 +79,27 @@ result before shipping it** — several of the fixes below alter which symbols e
   integer keys, so adding one symbol no longer renumbers every line below it.
 - Unknown entries in `extra.wpify-scoper.globals` now produce a warning naming the valid values.
   They used to be ignored silently, so `"wordpres"` produced a build that broke at runtime.
+- **`extra.wpify-scoper.composerjson` is no longer read-only**, but the guarantee that replaced the
+  3.x behaviour still holds: a *scoping run* never rewrites it. Only the new `require` and `remove`
+  actions edit it, and they touch only the entries you named, leaving your key order, your
+  formatting and every other block byte for byte as they were.
+- `Scoper::run()` takes a `ScoperRequest` instead of `(string $command, bool $useDevDependencies)`,
+  and no longer validates the action itself — `ScoperRequest` does that once, at the command line.
+  `Scoper` is not documented as an extension point and is constructed only by `Plugin` and
+  `ScoperCommand`, but the signature is public, so it is recorded here.
 
 ### Added
 
+- **`composer wpify-scoper require` and `composer wpify-scoper remove`.** Add and drop scoped
+  dependencies without hand-editing `composer-deps.json`. Each one resolves the change, updates the
+  manifest and the lock, and rebuilds the scoped tree — there is no second command to run.
+  Constraints are resolved against the *scoped* manifest, so its own `repositories` and
+  `config.platform.php` decide the answer. Supports `--dev`, `-W`/`--with-all-dependencies`,
+  `--fixed` (require only) and `--dry-run`. Available only on `composer wpify-scoper`, not on the
+  deprecated `bin/wpify-scoper`.
+- **A warning when a package is required both scoped and unscoped.** `composer wpify-scoper require`
+  now says so when the package is also in the root `composer.json`, because both copies end up
+  autoloaded and the unprefixed class name is back in the global namespace.
 - **`composer wpify-scoper install|update [--no-dev]`**, a real Composer command. The plugin
   previously declared a `CommandProvider` capability pointing at a class that did not implement it,
   which would have thrown on every `composer list` had it ever been reached.

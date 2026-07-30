@@ -43,16 +43,11 @@ final class Scoper {
 	}
 
 	/**
-	 * @param string $command            Either `install` or `update`.
-	 * @param bool   $useDevDependencies Whether the scoped dependency set includes require-dev.
+	 * @param ScoperRequest $request What to do, already validated at the command line boundary.
 	 *
 	 * @return int Exit code, 0 on success.
 	 */
-	public function run( string $command, bool $useDevDependencies ): int {
-		if ( ! in_array( $command, array( 'install', 'update' ), true ) ) {
-			throw new RuntimeException( sprintf( 'wpify-scoper: unsupported command "%s", expected install or update.', $command ) );
-		}
-
+	public function run( ScoperRequest $request ): int {
 		if ( self::isRunning() ) {
 			$this->io->writeError(
 				'<warning>wpify-scoper: already running (' . self::RUNNING_ENV . ' is set), skipping this nested invocation. Remove extra.wpify-scoper from your scoped manifest to silence this.</warning>'
@@ -74,6 +69,9 @@ final class Scoper {
 		$destination = $this->config->destinationDir();
 		$scoper      = $this->phpScoperPhar();
 
+		// Built before the try, so that the catch can ask it how far the publish got.
+		$installer = new ScopedTreeInstaller( $this->config, $this->io );
+
 		$inherited = $this->clearInheritedEnv();
 
 		Platform::putEnv( self::RUNNING_ENV, '1' );
@@ -82,26 +80,44 @@ final class Scoper {
 			$this->filesystem->ensureDirectoryExists( $source );
 			$this->filesystem->ensureDirectoryExists( $destination );
 
-			$this->writeManifest( $source );
+			$before = $this->writeManifest( $source );
 
 			$scoperConfig = ( new ScoperConfigFactory( $this->config, $this->io, $this->filesystem, $this->pluginDir ) )
 				->create( $source, $destination );
 
-			$this->io->write( sprintf(
-				'<info>wpify-scoper:</info> running composer %s for %s, scoping it with the prefix %s into %s',
-				$command,
-				$this->config->composerJson,
-				$this->config->prefix,
-				$this->config->folder
-			) );
+			$action = $request->action->value;
 
-			$arguments = array( $command, '--working-dir=' . $source, '--optimize-autoloader' );
+			$this->io->write( $request->dryRun
+				? sprintf(
+					'<info>wpify-scoper:</info> running composer %s for %s as a dry run, nothing will be written',
+					$action,
+					$this->config->composerJson
+				)
+				: sprintf(
+					'<info>wpify-scoper:</info> running composer %s for %s, scoping it with the prefix %s into %s',
+					$action,
+					$this->config->composerJson,
+					$this->config->prefix,
+					$this->config->folder
+				) );
 
-			if ( ! $useDevDependencies ) {
-				$arguments[] = '--no-dev';
+			$this->mustSucceed(
+				$this->runner->composer( $request->composerArguments( $source ), $source ),
+				'composer ' . $action
+			);
+
+			// The nested run wrote no composer.json and installed no vendor/, so there is nothing
+			// for php-scoper to rewrite and nothing to publish. What it printed is what Composer
+			// would do, not what the rest of the pipeline would then make of it.
+			if ( $request->dryRun ) {
+				$this->removeTempDir();
+
+				return 0;
 			}
 
-			$this->mustSucceed( $this->runner->composer( $arguments, $source ), 'composer ' . $command );
+			$delta = $request->action->mutatesManifest()
+				? ManifestDelta::between( $before, $this->readWorkspaceBlocks( $source ) )
+				: null;
 
 			$this->mustSucceed(
 				$this->runner->php(
@@ -117,7 +133,7 @@ final class Scoper {
 				'composer dump-autoload'
 			);
 
-			( new ScopedTreeInstaller( $this->config, $this->io ) )->install( $destination );
+			$installer->install( $destination, $delta );
 
 			$this->removeTempDir();
 
@@ -130,6 +146,16 @@ final class Scoper {
 				'<warning>wpify-scoper: the run failed, the workspace %s was kept - remove it once you no longer need it.</warning>',
 				$this->config->tempDir
 			) );
+
+			// The first thing anyone wants to know after a failed require: did it half-edit my
+			// manifest? For every failure up to and including php-scoper the answer is no, and
+			// saying so is cheaper than making the user diff the file to find out.
+			if ( $request->action->mutatesManifest() && ! $installer->hasPublishedManifest() ) {
+				$this->io->writeError( sprintf(
+					'<warning>wpify-scoper: %s was not modified.</warning>',
+					$this->config->composerJson
+				) );
+			}
 
 			throw $throwable;
 		} finally {
@@ -193,13 +219,19 @@ final class Scoper {
 	 * Derives the manifest the nested Composer resolves against, and writes it into the temp
 	 * directory.
 	 *
-	 * The user's composer-deps.json is only ever read. It used to be rewritten on every run with a
-	 * `scripts` block full of absolute host paths, which churned the file and clobbered anything
-	 * the user had written there - a hand-maintained `pre-autoload-dump` in particular. Everything
-	 * else the user declares, `scripts` included, is passed through untouched.
+	 * The user's composer-deps.json is never rewritten by the run itself. It used to be, on every
+	 * invocation, with a `scripts` block full of absolute host paths, which churned the file and
+	 * clobbered anything the user had written there - a hand-maintained `pre-autoload-dump` in
+	 * particular. Everything the user declares, `scripts` included, is passed through untouched.
+	 *
+	 * A `require` or `remove` run does edit it, but only through {@see ManifestDelta}, and only
+	 * once the pipeline has succeeded - which is what the snapshot returned here is for.
+	 *
+	 * @return array<string, array<string, string>> The scoped dependencies as they were before the run.
 	 */
-	private function writeManifest( string $source ): void {
+	private function writeManifest( string $source ): array {
 		$manifest = $this->readManifest();
+		$before   = ManifestDelta::blocksOf( $manifest );
 
 		// The nested install loads the globally installed copy of this plugin. Without this the
 		// nested root package would configure it, and the run would recurse.
@@ -214,6 +246,34 @@ final class Scoper {
 				throw new RuntimeException( sprintf( 'wpify-scoper: cannot copy %s.', $this->config->composerLock ) );
 			}
 		}
+
+		return $before;
+	}
+
+	/**
+	 * The scoped dependencies as the nested Composer left them in the workspace.
+	 *
+	 * @return array<string, array<string, string>>
+	 */
+	private function readWorkspaceBlocks( string $source ): array {
+		$path     = $source . '/composer.json';
+		$contents = @file_get_contents( $path );
+
+		if ( false === $contents ) {
+			throw new RuntimeException( sprintf( 'wpify-scoper: cannot read %s.', $path ) );
+		}
+
+		$manifest = json_decode( $contents );
+
+		if ( ! $manifest instanceof stdClass ) {
+			throw new RuntimeException( sprintf(
+				'wpify-scoper: %s is not a valid JSON object (%s).',
+				$path,
+				json_last_error_msg()
+			) );
+		}
+
+		return ManifestDelta::blocksOf( $manifest );
 	}
 
 	/**
