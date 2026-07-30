@@ -136,7 +136,12 @@ class Plugin implements PluginInterface, Capable, EventSubscriberInterface {
 			default                         => array( 'install', $event->isDevMode() ),
 		};
 
-		( new Scoper( $this->configuration, $this->io, new ProcessComposerRunner( $this->io ) ) )
-			->run( $command, $useDevDependencies );
+		( new Scoper(
+			$this->configuration,
+			$this->io,
+			new ProcessComposerRunner( $this->io ),
+			null,
+			UpdateNotifier::create( $event->getComposer(), $this->io, $this->configuration )
+		) )->run( $command, $useDevDependencies );
 	}
 }

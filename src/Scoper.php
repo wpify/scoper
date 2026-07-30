@@ -36,6 +36,7 @@ final class Scoper {
 		private readonly IOInterface $io,
 		private readonly ComposerRunner $runner,
 		?string $pluginDir = null,
+		private readonly ?UpdateNotifier $notifier = null,
 	) {
 		$this->filesystem = new Filesystem();
 		$this->pluginDir  = $pluginDir ?? dirname( __DIR__ );
@@ -128,6 +129,12 @@ final class Scoper {
 			foreach ( $inherited as $name => $value ) {
 				Platform::putEnv( $name, $value );
 			}
+
+			// Last, and after the environment is back to normal. On a successful run this is the
+			// final thing on screen; on a failed one it lands just above Composer's error output,
+			// so the error still reads last while the user - who may well be looking at a bug that
+			// is already fixed upstream - still learns they are behind.
+			$this->notifier?->notify();
 		}
 	}
 

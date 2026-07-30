@@ -96,6 +96,14 @@ result before shipping it** — several of the fixes below alter which symbols e
   fails rather than opening a pull request if any symbol count drops — a silently truncated list is
   how a broken extractor would otherwise ship.
 - `CONTRIBUTING.md`, and a troubleshooting section in the README.
+- **An update notification.** A scoping run now ends by telling you when a newer release of the
+  plugin exists, and how to get it — a plain command for a patch or minor, a link to the upgrade
+  guide for a major, since `composer update` cannot cross one. It reads the same public Packagist
+  metadata Composer resolves against, sends nothing about you or your project, caches the answer
+  for 24 hours, gives up after three seconds, and can never fail or delay a run. It is skipped
+  entirely when the run is non-interactive, which is CI and Docker builds, and when
+  `WPIFY_SCOPER_NO_UPDATE_CHECK` or `COMPOSER_DISABLE_NETWORK` is set. See
+  [Update notifications](docs/configuration.md#update-notifications).
 
 ### Removed
 

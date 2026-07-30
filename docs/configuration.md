@@ -248,9 +248,56 @@ Use `composer wpify-scoper` instead.
 | `COMPOSER` | Composer | Names the manifest Composer reads. **Cleared for the duration of a run** and restored afterwards, because the nested Composer would otherwise look for your `composer-deps.json` inside the temporary workspace. |
 | `COMPOSER_VENDOR_DIR` | Composer | Names the directory Composer installs into. Also **cleared for the duration of a run** — php-scoper's finder only ever looks at the workspace's own `vendor/`. |
 | `WPIFY_SCOPER_RUNNING` | the scoper | Set to `1` while a run is in progress. It is how the nested Composer — which loads the globally installed copy of this plugin — knows not to start a run of its own. Do not set it yourself. |
+| `WPIFY_SCOPER_NO_UPDATE_CHECK` | the scoper | Set to any non-empty value to switch off the [update notification](#update-notifications). |
+| `COMPOSER_DISABLE_NETWORK` | Composer | Composer's own offline switch. The update check honours it and does not run. |
 
 Exporting `COMPOSER` or `COMPOSER_VENDOR_DIR` in your shell used to break scoping for that one
 developer and nobody else. It no longer does.
+
+## Update notifications
+
+When a scoping run finishes, the plugin tells you if a newer version of itself has been released:
+
+```
+wpify-scoper: version 4.0.1 is available, you have 4.0.0.
+wpify-scoper: update with "composer global update wpify/scoper".
+```
+
+Crossing a major version links the upgrade guide instead of a command, because
+`composer update` cannot cross a major on its own.
+
+### What it does on the network
+
+One unauthenticated `GET` to `https://repo.packagist.org/p2/wpify/scoper.json`, the same public
+package metadata Composer itself reads when resolving this package. **Nothing about you, your
+project or your dependencies is sent** — it is a plain request for a file, with no query string
+and no request body.
+
+The answer is cached in Composer's own cache directory for 24 hours, so this happens at most once
+a day per machine no matter how many projects you scope or how often. Only a successful lookup
+resets that clock, so being offline in the morning does not cost you the check in the afternoon.
+
+The request has a three-second timeout and is capped in size. If it fails for any reason —
+offline, a proxy, Packagist having a bad day — the run is entirely unaffected and nothing is
+printed. Run with `-v` to see why it failed.
+
+Packagist rather than GitHub's tag API on purpose: a version on Packagist is one you can actually
+install, and GitHub's unauthenticated API is rate limited per IP in a way that breaks on shared
+office and CI addresses. See [ADR 0001](adr/0001-packagist-not-github-tags-as-the-release-source.md).
+
+### Turning it off
+
+The check is skipped automatically whenever the run is **non-interactive** — no TTY, or
+`--no-interaction`. That covers CI, Docker builds and deploy scripts without any configuration,
+which is where the notice would be noise nobody can act on anyway.
+
+To switch it off everywhere else:
+
+```bash
+export WPIFY_SCOPER_NO_UPDATE_CHECK=1
+```
+
+`COMPOSER_DISABLE_NETWORK` also suppresses it.
 
 ## Verbose output
 

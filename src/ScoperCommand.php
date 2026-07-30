@@ -54,7 +54,12 @@ HELP
 			return 1;
 		}
 
-		return ( new Scoper( $configuration, $io, new ProcessComposerRunner( $io ) ) )
-			->run( $action, ! (bool) $input->getOption( 'no-dev' ) );
+		return ( new Scoper(
+			$configuration,
+			$io,
+			new ProcessComposerRunner( $io ),
+			null,
+			UpdateNotifier::create( $composer, $io, $configuration )
+		) )->run( $action, ! (bool) $input->getOption( 'no-dev' ) );
 	}
 }
