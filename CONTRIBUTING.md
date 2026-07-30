@@ -1,7 +1,30 @@
 # Contributing
 
-Thanks for helping out. This document covers the two things that are not obvious from the code:
-what `sources/` is, and how the symbol lists are produced.
+Thanks for helping out.
+
+This document covers the mechanics of contributing and the two things that are not obvious from the
+code: what `sources/` is, and how the symbol lists are produced. For how the tool actually works —
+the pipeline, the fixups, the swap — read [docs/how-it-works.md](docs/how-it-works.md) first.
+
+Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Before you start
+
+**Something is broken.** Check [docs/troubleshooting.md](docs/troubleshooting.md), then open an
+issue using the bug report form. A report without the `-v` output and your `extra.wpify-scoper`
+block cannot be acted on, which is why the form asks for both.
+
+**A WordPress symbol came out prefixed** (or a symbol that should have been scoped did not). Use
+the *Missing or wrongly scoped symbol* form. This is the worst failure mode this project has and it
+gets its own template.
+
+**A security issue.** Not in a public issue — see [SECURITY.md](SECURITY.md).
+
+**You want to change behaviour.** Open an issue before writing the code. Anything that changes what
+lands in a consumer's `deps/` needs a conversation first, because consumers cannot see that their
+scoped tree changed until something fatals in production.
+
+**A typo, a doc fix, an obviously-correct bug fix.** Just send the pull request.
 
 ## Getting set up
 
@@ -140,11 +163,44 @@ commit and the modernise commit can be the same commit — you pay the blame cos
 it: one isolated commit, no logic changes, and add the SHA to `.git-blame-ignore-revs` in the same
 pull request.
 
-## Before opening a pull request
+## Documentation
+
+User documentation lives in `docs/`, and the README is the front door — a pitch, a quickstart and a
+link table, nothing more. If you change user-facing behaviour, update the page that documents it in
+the same pull request.
+
+The pages have distinct jobs and it is worth keeping them that way:
+
+| Page | Job |
+|---|---|
+| [`docs/getting-started.md`](docs/getting-started.md) | A tutorial. One path, no choices, verifiable at each step. |
+| [`docs/configuration.md`](docs/configuration.md) | A reference. Complete and boring. |
+| [`docs/troubleshooting.md`](docs/troubleshooting.md) | Symptom, cause, fix. |
+| [`docs/deployment.md`](docs/deployment.md) | Task recipes. |
+| [`docs/customizing.md`](docs/customizing.md) | Task recipes for `scoper.custom.php`. |
+| [`docs/how-it-works.md`](docs/how-it-works.md) | Explanation. Why, not how-to. |
+| [`docs/upgrading-to-4.md`](docs/upgrading-to-4.md) | Where historical behaviour belongs. |
+
+Two conventions worth respecting:
+
+- **Keep history out of the reference pages.** "This used to be a silent no-op" belongs in the
+  changelog or the upgrade guide, not in the page a new user reads as current behaviour.
+- **Use the same word for the same thing.** *Scoped tree* is the output; `deps/` names the path.
+  *Workspace* is the `tmp-*` directory. *Customization file* is `scoper.custom.php`. *Scoped
+  manifest* is `composer-deps.json`. User docs say "your project", never "consumer" — that word is
+  for this file.
+
+A link check runs on every pull request, so relative links that break during a rename are caught
+before merge.
+
+## Opening a pull request
+
+Branch from `master`. Keep the pull request to one thing.
 
 ```bash
 composer validate --strict
 composer analyse
+composer cs
 composer test
 composer test:integration
 ```
@@ -152,8 +208,32 @@ composer test:integration
 CI runs all of it across PHP 8.2, 8.3, 8.4 and 8.5, plus a smoke job that installs the plugin into
 a scratch project — the only tier that catches "the plugin throws during `activate()`".
 
+Commit messages follow the shape already in the log: a short imperative summary, and a body
+explaining why when the why is not obvious. Nothing stricter than that is enforced.
+
 ## Changing what lands in `deps/`
 
 Anything that changes the generated output is at least a minor release, not a patch, even when the
 diff is three characters. Consumers cannot see that their scoped tree changed until something
-fatals in production. Say so in `CHANGELOG.md`.
+fatals in production. Say so in `CHANGELOG.md`, under **Changed** or **Fixed**, and say what
+changed about the output rather than what changed in the code.
+
+## Releasing
+
+Releases are manual. `composer.json` carries no `version` field on purpose — Packagist derives the
+version from the tag.
+
+1. Move the `[Unreleased]` heading in `CHANGELOG.md` to the version and date, and update the
+   comparison links at the bottom of the file.
+2. Confirm CI is green on `master`.
+3. Tag and push:
+
+   ```bash
+   git tag -a 4.0.0 -m "4.0.0"
+   git push origin 4.0.0
+   ```
+
+4. Packagist picks the tag up from the repository webhook.
+
+Version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the rule
+above layered on top: a change to the generated scoped output is never a patch.

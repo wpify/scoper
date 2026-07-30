@@ -1,0 +1,42 @@
+name: Docs
+
+# The README links into seven pages under docs/, and those pages cross-link each other. A rename
+# breaks relative links silently, and nobody notices until a reader lands on a 404.
+on:
+  pull_request:
+    paths:
+      - '**.md'
+      - '.github/workflows/docs.yml'
+  push:
+    branches: [ master ]
+    paths:
+      - '**.md'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  links:
+    name: Check links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # `vendor` and `sources` hold third-party READMEs whose dead links are not ours to fix.
+          args: >-
+            --no-progress
+            --max-retries 2
+            --exclude-path vendor
+            --exclude-path sources
+            --exclude-path CHANGELOG.md
+            './**/*.md'
+          fail: true

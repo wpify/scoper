@@ -16,6 +16,16 @@
 /scripts                export-ignore
 /tests                  export-ignore
 
+# Contributor-facing documents. They are read on GitHub, never from inside a consumer's vendor/,
+# and the seven pages under /docs are already ignored above for the same reason.
+#
+# README.md, LICENSE and CHANGELOG.md deliberately stay in the dist archive: the first two are what
+# a consumer looks for when they open vendor/wpify/scoper, and GPL-2.0 requires the licence to
+# travel with the distribution.
+/CODE_OF_CONDUCT.md     export-ignore
+/CONTRIBUTING.md        export-ignore
+/SECURITY.md            export-ignore
+
 # Generated symbol tables.
 #
 # `linguist-generated=true` collapses them in GitHub pull request diffs, which is what makes the
