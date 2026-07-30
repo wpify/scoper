@@ -33,8 +33,9 @@
   "license": "GPL-2.0-or-later",
   "authors": [
     {
-      "name": "Daniel Mejta",
-      "email": "daniel@mejta.net"
+      "name": "WPify s.r.o.",
+      "email": "info@wpify.io",
+      "homepage": "https://wpify.io"
     }
   ],
   "bin": [

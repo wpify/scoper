@@ -19,7 +19,7 @@ Report privately, either way:
 
 - [Open a private security advisory](https://github.com/wpify/scoper/security/advisories/new) on
   GitHub — preferred, because it keeps the discussion and the eventual advisory in one place.
-- Or email **daniel@mejta.net** with `wpify/scoper` in the subject.
+- Or email **info@wpify.io** with `wpify/scoper` in the subject.
 
 Please include:
 

@@ -1,7 +1,7 @@
 wpify/scoper - a Composer plugin that scopes dependencies for WordPress
 plugins and themes.
 
-Copyright (C) 2021-2026 Daniel Mejta and contributors
+Copyright (C) 2021-2026 WPify s.r.o. (https://wpify.io) and contributors
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

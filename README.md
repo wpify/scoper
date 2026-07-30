@@ -144,4 +144,4 @@ Security issues should not go in a public issue. See [SECURITY.md](SECURITY.md).
 
 ## License
 
-[GPL-2.0-or-later](LICENSE). Copyright © 2021–2026 Daniel Mejta and contributors.
+[GPL-2.0-or-later](LICENSE). Copyright © 2021–2026 [WPify s.r.o.](https://wpify.io) and contributors.
