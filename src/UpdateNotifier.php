@@ -4,13 +4,11 @@ namespace Wpify\Scoper;
 
 use Composer\Cache;
 use Composer\Composer;
-use Composer\InstalledVersions;
 use Composer\IO\IOInterface;
 use Composer\Semver\Comparator;
 use Composer\Semver\VersionParser;
 use Composer\Util\HttpDownloader;
 use Composer\Util\Platform;
-use OutOfBoundsException;
 use Throwable;
 
 /**
@@ -59,7 +57,7 @@ final class UpdateNotifier {
 		return new self(
 			$io,
 			new PackagistReleaseSource( new HttpDownloader( $io, $config ), $cache ),
-			self::installedVersion(),
+			PluginPackage::version(),
 			! self::isInstalledUnder( $configuration->vendorDir ),
 		);
 	}
@@ -125,26 +123,8 @@ final class UpdateNotifier {
 		$this->io->writeError( sprintf(
 			'<info>wpify-scoper:</info> update with "composer %supdate %s".',
 			$this->globalInstall ? 'global ' : '',
-			PackagistReleaseSource::PACKAGE
+			PluginPackage::NAME
 		) );
-	}
-
-	/**
-	 * The version of this plugin that is actually running.
-	 *
-	 * @return string|null Null when Composer's runtime has no record of the package, which is what
-	 *                     a path repository or a hand-dropped copy looks like.
-	 */
-	private static function installedVersion(): ?string {
-		if ( ! class_exists( InstalledVersions::class ) ) {
-			return null;
-		}
-
-		try {
-			return InstalledVersions::getPrettyVersion( PackagistReleaseSource::PACKAGE );
-		} catch ( OutOfBoundsException ) {
-			return null;
-		}
 	}
 
 	/**
@@ -154,19 +134,10 @@ final class UpdateNotifier {
 	 * demonstrably project-local is treated as global, which is the documented install.
 	 */
 	private static function isInstalledUnder( string $vendorDir ): bool {
-		if ( ! class_exists( InstalledVersions::class ) ) {
-			return false;
-		}
+		$installPath = PluginPackage::installPath();
+		$vendorDir   = realpath( $vendorDir );
 
-		try {
-			$installPath = realpath( InstalledVersions::getInstallPath( PackagistReleaseSource::PACKAGE ) ?? '' );
-		} catch ( OutOfBoundsException ) {
-			return false;
-		}
-
-		$vendorDir = realpath( $vendorDir );
-
-		return false !== $installPath
+		return null !== $installPath
 			&& false !== $vendorDir
 			&& str_starts_with( $installPath, $vendorDir . DIRECTORY_SEPARATOR );
 	}

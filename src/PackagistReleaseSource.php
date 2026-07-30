@@ -18,9 +18,7 @@ use UnexpectedValueException;
  */
 final class PackagistReleaseSource implements ReleaseSource {
 
-	public const PACKAGE = 'wpify/scoper';
-
-	private const URL = 'https://repo.packagist.org/p2/' . self::PACKAGE . '.json';
+	private const URL = 'https://repo.packagist.org/p2/' . PluginPackage::NAME . '.json';
 
 	/**
 	 * Seconds a cached answer stays good for.
@@ -87,7 +85,7 @@ final class PackagistReleaseSource implements ReleaseSource {
 		}
 
 		$packages = $decoded['packages'] ?? null;
-		$versions = is_array( $packages ) ? ( $packages[ self::PACKAGE ] ?? null ) : null;
+		$versions = is_array( $packages ) ? ( $packages[ PluginPackage::NAME ] ?? null ) : null;
 
 		if ( ! is_array( $versions ) ) {
 			return null;

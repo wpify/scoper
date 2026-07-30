@@ -61,6 +61,15 @@ final class Scoper {
 			return 0;
 		}
 
+		$version = PluginPackage::version();
+
+		// Before any work, so that a run which dies in phpScoperPhar() or halfway through the
+		// pipeline has still said which version produced the wreckage. It is the first thing worth
+		// knowing about a bug report, and the last thing anybody remembers to ask for.
+		if ( null !== $version ) {
+			$this->io->write( sprintf( '<info>wpify-scoper:</info> version %s', $version ) );
+		}
+
 		$source      = $this->config->sourceDir();
 		$destination = $this->config->destinationDir();
 		$scoper      = $this->phpScoperPhar();

@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Wpify\Scoper\Configuration;
+use Wpify\Scoper\PluginPackage;
 use Wpify\Scoper\ProcessComposerRunner;
 use Wpify\Scoper\Scoper;
 
@@ -99,6 +100,26 @@ final class ScopingPipelineTest extends TestCase {
 		}
 
 		return $contents;
+	}
+
+	// --- the run says what it is -------------------------------------------------------------
+
+	/**
+	 * The version header has to come out of a real run, not a unit test: its whole purpose is to
+	 * be on screen before anything can go wrong, and only running the pipeline proves it is.
+	 */
+	public function test_the_run_announces_the_plugin_version_before_scoping(): void {
+		$version = PluginPackage::version();
+
+		self::assertNotNull( $version, 'the test suite runs from a Composer install, so the version must resolve' );
+		self::assertStringContainsString( 'wpify-scoper: version ' . $version, self::$output );
+
+		$header  = strpos( self::$output, 'wpify-scoper: version ' );
+		$scoping = strpos( self::$output, 'running composer ' );
+
+		self::assertIsInt( $header );
+		self::assertIsInt( $scoping );
+		self::assertLessThan( $scoping, $header, 'the version must be announced before the scoping starts' );
 	}
 
 	// --- the scoped tree exists and is loadable ------------------------------------------------
