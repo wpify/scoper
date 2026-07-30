@@ -18,7 +18,7 @@ jobs:
     name: Validate and analyse
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -53,7 +53,7 @@ jobs:
           - php: '8.2'
             dependencies: 'lowest'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -74,7 +74,7 @@ jobs:
     # Spawns Composer and php-scoper against the offline fixture. One PHP version is enough: what
     # it exercises is the pipeline, and the unit matrix already covers the language surface.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -93,7 +93,7 @@ jobs:
     # The only job that exercises Composer actually loading the plugin: an exception thrown from
     # activate() or a broken `extra.class` is invisible to every other tier.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: scoper
 
