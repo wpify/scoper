@@ -6,7 +6,7 @@
  *
  * source:    woocommerce/action-scheduler
  * version:   4.0.0
- * generated: 2026-07-29
+ * generated: 2026-08-03
  */
 
 return array(

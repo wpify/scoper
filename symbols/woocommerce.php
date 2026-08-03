@@ -6,7 +6,7 @@
  *
  * source:    wpackagist-plugin/woocommerce
  * version:   10.9.4
- * generated: 2026-07-29
+ * generated: 2026-08-03
  */
 
 return array(

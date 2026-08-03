@@ -6,7 +6,7 @@
  *
  * source:    johnpbloch/wordpress
  * version:   7.0.2
- * generated: 2026-07-29
+ * generated: 2026-08-03
  */
 
 return array(
