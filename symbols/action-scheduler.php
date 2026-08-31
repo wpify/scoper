@@ -5,8 +5,8 @@
  * Regenerate with: composer extract
  *
  * source:    woocommerce/action-scheduler
- * version:   4.0.0
- * generated: 2026-07-29
+ * version:   4.1.0
+ * generated: 2026-08-31
  */
 
 return array(
@@ -52,6 +52,7 @@ return array(
 		'ActionScheduler_QueueRunner',
 		'ActionScheduler_RecurringActionScheduler',
 		'ActionScheduler_Schedule',
+		'ActionScheduler_ScheduleDeserializer',
 		'ActionScheduler_Schedule_Deprecated',
 		'ActionScheduler_SimpleSchedule',
 		'ActionScheduler_Store',
@@ -86,8 +87,8 @@ return array(
 	'exclude-constants' => array(
 	),
 	'exclude-functions' => array(
-		'action_scheduler_initialize_4_dot_0_dot_0',
-		'action_scheduler_register_4_dot_0_dot_0',
+		'action_scheduler_initialize_4_dot_1_dot_0',
+		'action_scheduler_register_4_dot_1_dot_0',
 		'as_enqueue_async_action',
 		'as_get_datetime_object',
 		'as_get_scheduled_actions',

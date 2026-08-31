@@ -6,7 +6,7 @@
  *
  * source:    wp-cli/wp-cli
  * version:   v2.12.0
- * generated: 2026-07-29
+ * generated: 2026-08-31
  */
 
 return array(
